@@ -1,3 +1,4 @@
+# backend/app/config.py
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -17,7 +18,7 @@ class Settings(BaseSettings):
 
     # Auth
     clerk_jwks_url: str = "https://sincere-akita-46.clerk.accounts.dev/.well-known/jwks.json"
-    clerk_issuer: str = "https://api.clerk.com"
+    clerk_issuer: str = "https://sincere-akita-46.clerk.accounts.dev"
     allow_dev_user_header: bool = True
 
 settings = Settings()
