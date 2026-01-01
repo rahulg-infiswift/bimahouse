@@ -58,7 +58,7 @@ export default function RootLayout({
               {/* Left: brand + nav */}
               <div className="flex items-center gap-2">
                 <Link href="/" className="text-sm font-semibold tracking-tight">
-                  BimaHouse
+                  BimaHouse Insurance
                 </Link>
 
                 <SignedIn>

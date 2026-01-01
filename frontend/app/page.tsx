@@ -7,7 +7,7 @@ export default function HomePage() {
     <main className="mx-auto max-w-4xl px-6 py-10">
       <div className="rounded-2xl border bg-white/60 p-8 shadow-sm">
         <h1 className="text-3xl font-semibold tracking-tight">
-          BimaHouse Policy Extractor
+          BimaHouse Insurance
         </h1>
         <p className="mt-3 text-sm text-gray-600">
           Upload an insurance policy PDF and extract structured policy details

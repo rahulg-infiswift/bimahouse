@@ -36,7 +36,15 @@ app = FastAPI(title="Policy Extractor API", version="1.0.0", lifespan=lifespan)
 # CORS (tighten in prod)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://127.0.0.1:3000", 
+        "http://13.200.229.222",
+        "https://bimahouseinsurance.in",
+        "https://www.bimahouseinsurance.in",
+        "http://bimahouseinsurance.in",
+        "http://www.bimahouseinsurance.in",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
