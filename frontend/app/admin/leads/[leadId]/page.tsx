@@ -10,7 +10,6 @@ type LeadDoc = {
   doc_type: string;
   original_filename: string;
   uploaded_at: string;
-  verification_status: string;
 };
 
 type LeadDetail = {
@@ -59,6 +58,7 @@ export default function AdminLeadDetailPage() {
   }
 
   async function load() {
+    if (!leadId) return;
     setLoading(true);
     setErr(null);
     setOk(null);
@@ -79,7 +79,7 @@ export default function AdminLeadDetailPage() {
   }
 
   useEffect(() => {
-    if (leadId) load();
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadId]);
 
@@ -125,7 +125,7 @@ export default function AdminLeadDetailPage() {
       const form = new FormData();
       form.append("file", file);
 
-      // Recommended backend endpoint:
+      // Backend endpoint expected:
       // POST /v1/admin/leads/{lead_id}/documents?doc_type=...
       const resp = await fetch(
         `${API}/v1/admin/leads/${leadId}/documents?doc_type=${encodeURIComponent(docType)}`,
@@ -224,6 +224,7 @@ export default function AdminLeadDetailPage() {
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
                   className="border rounded-md px-3 py-2 text-sm"
+                  disabled={busy}
                 >
                   {STATUSES.map((s) => (
                     <option key={s} value={s}>
@@ -238,50 +239,29 @@ export default function AdminLeadDetailPage() {
                 disabled={busy}
                 className="mt-3 w-full rounded-md bg-black text-white px-4 py-2 text-sm disabled:opacity-50"
               >
-                Save Status + Profile
+                Save Status
               </button>
 
               <div className="mt-2 text-xs text-gray-600">
-                Tip: set <b>submitted</b> after KYC is complete.
+                Use <b>in_progress</b> while collecting docs. Set <b>submitted</b> when complete.
               </div>
             </div>
           </div>
 
-          {/* Profile JSON */}
-          <div className="mt-6 rounded-lg border p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="font-medium">KYC Profile</div>
-                <div className="text-xs text-gray-600 mt-1">
-                  v1 uses a JSON blob. Later we can convert this into a proper form UI.
-                </div>
-              </div>
-              <button
-                onClick={saveProfileAndStatus}
-                disabled={busy}
-                className="rounded-md border px-3 py-2 text-sm disabled:opacity-50"
-              >
-                Save
-              </button>
-            </div>
-
-            <textarea
-              className="mt-3 w-full min-h-[260px] border rounded-md p-3 font-mono text-xs"
-              value={profileJson}
-              onChange={(e) => setProfileJson(e.target.value)}
-            />
-          </div>
 
           {/* Documents */}
           <div className="mt-6 rounded-lg border p-4">
             <div className="font-medium">Documents</div>
             <div className="text-xs text-gray-600 mt-1">
-              Upload documents collected from partner and track verification status.
+              Admin uploads documents collected from the partner. No per-document status is tracked.
             </div>
 
             <div className="mt-4 grid gap-3">
               {DOC_TYPES.map((d) => (
-                <div key={d.key} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border rounded-md p-3">
+                <div
+                  key={d.key}
+                  className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border rounded-md p-3"
+                >
                   <div>
                     <div className="text-sm">{d.label}</div>
                     <div className="text-xs text-gray-600">Uploaded: {docsByType[d.key] || 0}</div>
@@ -307,18 +287,14 @@ export default function AdminLeadDetailPage() {
                 <div className="mt-3 rounded-md border overflow-hidden">
                   <div className="grid grid-cols-12 gap-2 bg-gray-50 px-3 py-2 text-xs font-medium">
                     <div className="col-span-3">Type</div>
-                    <div className="col-span-5">File</div>
-                    <div className="col-span-2">Status</div>
+                    <div className="col-span-7">File</div>
                     <div className="col-span-2">Uploaded</div>
                   </div>
                   <div className="divide-y">
                     {data.documents.map((doc) => (
                       <div key={doc.doc_id} className="grid grid-cols-12 gap-2 px-3 py-2 text-xs">
                         <div className="col-span-3">{doc.doc_type}</div>
-                        <div className="col-span-5 break-all">{doc.original_filename}</div>
-                        <div className="col-span-2">
-                          <span className="rounded-full border px-2 py-1">{doc.verification_status}</span>
-                        </div>
+                        <div className="col-span-7 break-all">{doc.original_filename}</div>
                         <div className="col-span-2 text-gray-600">
                           {new Date(doc.uploaded_at).toLocaleString()}
                         </div>

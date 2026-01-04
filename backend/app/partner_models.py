@@ -80,7 +80,7 @@ class PartnerLeadDocument(Base):
     content_type = Column(String, nullable=True)
     size_bytes = Column(Integer, nullable=True)
 
-    verification_status = Column(String, nullable=False, default=VerificationStatus.PENDING, index=True)
+    verification_status = Column(String, nullable=False, default=VerificationStatus.VERIFIED, index=True)
     verification_notes = Column(Text, nullable=True)
 
     uploaded_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)

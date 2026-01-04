@@ -6,7 +6,6 @@ import { auth } from "@clerk/nextjs/server";
 function isAdmin(userId: string | null | undefined) {
   if (!userId) return false;
   const allowList = process.env.NEXT_PUBLIC_ADMIN_USER_IDS || "";
-  console.log("ALLOWLIST:", allowList);
   return allowList.includes(userId);
 }
 

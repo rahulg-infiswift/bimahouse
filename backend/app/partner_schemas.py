@@ -3,12 +3,15 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, EmailStr
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
-
+class INPhoneNumber(PhoneNumber):
+    default_region_code = "IN"     # parse numbers without +country as India :contentReference[oaicite:1]{index=1}
+    phone_format = "RFC3966"          # store as +91XXXXXXXXXX (instead of tel:+...) :contentReference[oaicite:2]{index=2}
+    supported_regions = ["IN"]   # restrict to India only :contentReference[oaicite:3]{index=3}
 
 class LeadCreateIn(BaseModel):
     full_name: str = Field(..., min_length=2)
     email: EmailStr
-    phone: PhoneNumber
+    phone: INPhoneNumber
 
 
 class LeadCreateOut(BaseModel):

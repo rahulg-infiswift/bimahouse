@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     )
 
     env: str = "dev"
-    frontend_base: str = "https://localhost:3000"
     database_url: str
     redis_url: str = "redis://localhost:6379/0"
     rq_queue_name: str = "policy-extract"
