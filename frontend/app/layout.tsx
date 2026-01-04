@@ -9,6 +9,7 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
+import { auth }  from "@clerk/nextjs/server";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -27,13 +28,7 @@ export const metadata: Metadata = {
   description: "Upload policy PDFs and extract structured JSON",
 };
 
-function NavLink({
-  href,
-  label,
-}: {
-  href: string;
-  label: string;
-}) {
+function NavLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
@@ -44,11 +39,22 @@ function NavLink({
   );
 }
 
-export default function RootLayout({
+// Server-side check (App Router) so we don’t flash links on load
+async function isAdminUser(): Promise<boolean> {
+  const { userId } = await auth();
+  if (!userId) return false;
+
+  const allowList = process.env.NEXT_PUBLIC_ADMIN_USER_IDS || "";
+  return allowList.includes(userId);
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const admin = await isAdminUser();
+
   return (
     <ClerkProvider>
       <html lang="en">
@@ -61,13 +67,15 @@ export default function RootLayout({
                   BimaHouse Insurance
                 </Link>
 
-                <SignedIn>
-                  <nav className="ml-4 hidden items-center gap-1 sm:flex">
-                    <NavLink href="/" label="Home" />
+                <nav className="ml-4 hidden items-center gap-1 sm:flex">
+                  <NavLink href="/" label="Home" />
+
+                  <SignedIn>
                     <NavLink href="/upload" label="Upload" />
                     <NavLink href="/policies" label="Policies" />
-                  </nav>
-                </SignedIn>
+                    {admin && <NavLink href="/admin/leads" label="Manage Leads" />}
+                  </SignedIn>
+                </nav>
               </div>
 
               {/* Right: auth controls */}
@@ -77,6 +85,7 @@ export default function RootLayout({
                   <nav className="flex items-center gap-1 sm:hidden">
                     <NavLink href="/upload" label="Upload" />
                     <NavLink href="/policies" label="Policies" />
+                    {admin && <NavLink href="/admin/leads" label="Leads" />}
                   </nav>
                 </SignedIn>
 

@@ -11,3 +11,6 @@ openai==2.14.0
 python-jose==3.3.0
 requests==2.32.3
 openpyxl==3.1.5
+email-validator==2.3.0
+pydantic_extra_types==2.11.0
+phonenumbers==9.0.21

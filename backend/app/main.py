@@ -22,6 +22,10 @@ from app.storage import save_pdf_bytes
 from app.worker import process_extraction_job
 from app.export_utils import json_to_csv_bytes, json_to_xlsx_bytes
 
+from app import partner_models # Attach partner tables to Base.metadata.tables
+from app.partner_routes import router as partner_router
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if settings.env == "dev":
@@ -54,6 +58,10 @@ app.add_middleware(
 # -----------------------------
 # Routes (all under /v1)
 # -----------------------------
+
+
+# Include partner leads routes
+app.include_router(partner_router)
 
 @app.get("/v1/health")
 def health():
