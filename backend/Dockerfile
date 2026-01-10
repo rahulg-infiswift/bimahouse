@@ -5,6 +5,8 @@ COPY requirements.txt /src/requirements.txt
 RUN pip install --no-cache-dir -r /src/requirements.txt
 
 COPY app /src/app
+COPY alembic.ini /src/alembic.ini
+COPY alembic /src/alembic
 
 ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
