@@ -120,3 +120,70 @@ def json_to_xlsx_bytes(data: Any) -> bytes:
     out = io.BytesIO()
     wb.save(out)
     return out.getvalue()
+
+
+def _flatten_json(data: Any, prefix: str = "") -> Dict[str, str]:
+    """Flatten a nested JSON into a flat dict with dot-notation keys."""
+    result: Dict[str, str] = {}
+    
+    if isinstance(data, dict):
+        for k, v in data.items():
+            new_key = f"{prefix}.{k}" if prefix else k
+            result.update(_flatten_json(v, new_key))
+    elif isinstance(data, list):
+        for i, v in enumerate(data):
+            new_key = f"{prefix}[{i}]"
+            result.update(_flatten_json(v, new_key))
+    else:
+        result[prefix] = _stringify(data)
+    
+    return result
+
+
+def policies_to_xlsx_bytes(policies: List[Any]) -> bytes:
+    """
+    Creates an XLSX with one row per policy.
+    All extracted JSON fields are flattened into columns.
+    """
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Policies"
+    
+    # Collect all unique keys across all policies
+    all_keys: set = set()
+    flattened_policies: List[Dict[str, str]] = []
+    
+    for policy in policies:
+        flat = {
+            "policy_id": str(policy.id),
+            "original_filename": policy.original_filename,
+            "created_at": policy.created_at.isoformat() if policy.created_at else "",
+            "schema_version": policy.schema_version or "",
+        }
+        
+        if policy.extracted_json:
+            extracted_flat = _flatten_json(policy.extracted_json)
+            flat.update(extracted_flat)
+        
+        all_keys.update(flat.keys())
+        flattened_policies.append(flat)
+    
+    # Sort keys: metadata first, then extracted fields
+    metadata_keys = ["policy_id", "original_filename", "created_at", "schema_version"]
+    extracted_keys = sorted(k for k in all_keys if k not in metadata_keys)
+    ordered_keys = metadata_keys + extracted_keys
+    
+    # Write header row
+    ws.append(ordered_keys)
+    
+    # Write data rows
+    for flat in flattened_policies:
+        row = [flat.get(k, "") for k in ordered_keys]
+        ws.append(row)
+    
+    _autosize_worksheet(ws)
+    
+    out = io.BytesIO()
+    wb.save(out)
+    return out.getvalue()
+

@@ -30,6 +30,11 @@ export default function PoliciesPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>("");
   const [items, setItems] = useState<PolicyListItem[]>([]);
+  
+  // Date filter state
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [downloading, setDownloading] = useState(false);
 
   async function fetchWithAuth(path: string, token: string, init?: RequestInit) {
     return fetch(`${apiBase}${path}`, {
@@ -53,7 +58,14 @@ export default function PoliciesPage() {
       const token = await getToken();
       if (!token) throw new Error("Could not retrieve Clerk token.");
 
-      const res = await fetchWithAuth("/v1/policies", token);
+      // Build query params for date filters
+      const params = new URLSearchParams();
+      if (startDate) params.append("start_date", startDate);
+      if (endDate) params.append("end_date", endDate);
+      const queryString = params.toString();
+      const url = `/v1/policies${queryString ? `?${queryString}` : ""}`;
+
+      const res = await fetchWithAuth(url, token);
       if (!res.ok) {
         const t = await res.text();
         throw new Error(`List policies failed: ${res.status} ${t}`);
@@ -62,24 +74,29 @@ export default function PoliciesPage() {
       const data = (await res.json()) as PoliciesResp;
       const normalized = Array.isArray(data.items) ? data.items : [];
       setItems(normalized);
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      setError(message);
     } finally {
       setBusy(false);
     }
   }
 
-  async function download(policyId: string, format: "json" | "csv" | "xlsx") {
+  async function downloadAllExcel() {
     setError("");
+    setDownloading(true);
     try {
       const token = await getToken();
       if (!token) throw new Error("Could not retrieve Clerk token.");
-      if (!policyId) throw new Error("Missing policy_id for download.");
 
-      const res = await fetchWithAuth(
-        `/v1/policies/${policyId}/download?format=${format}`,
-        token
-      );
+      // Build query params for date filters
+      const params = new URLSearchParams();
+      if (startDate) params.append("start_date", startDate);
+      if (endDate) params.append("end_date", endDate);
+      const queryString = params.toString();
+      const url = `/v1/policies/download/bulk${queryString ? `?${queryString}` : ""}`;
+
+      const res = await fetchWithAuth(url, token);
 
       if (!res.ok) {
         const t = await res.text();
@@ -87,24 +104,43 @@ export default function PoliciesPage() {
       }
 
       const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      // Extract filename from Content-Disposition header or use default
+      const contentDisposition = res.headers.get("Content-Disposition");
+      let filename = "policies.xlsx";
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+)"?/);
+        if (match) filename = match[1];
+      }
 
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `${policyId}.${format}`;
+      a.href = downloadUrl;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      setError(message);
+    } finally {
+      setDownloading(false);
     }
+  }
+
+  function clearFilters() {
+    setStartDate("");
+    setEndDate("");
   }
 
   useEffect(() => {
     loadPolicies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
+
+  // Count extracted policies for display
+  const extractedCount = items.filter((p) => p.has_extracted_json).length;
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
@@ -116,20 +152,67 @@ export default function PoliciesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Link
-            href="/upload"
-            className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white"
-          >
-            Upload
-          </Link>
+        <Link
+          href="/upload"
+          className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white"
+        >
+          Upload
+        </Link>
+      </div>
 
+      {/* Date Filters */}
+      <div className="mt-6 flex flex-wrap items-end gap-4 rounded-xl border bg-gray-50 p-4">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="startDate" className="text-xs font-medium text-gray-600">
+            Start Date
+          </label>
+          <input
+            type="date"
+            id="startDate"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="rounded-lg border px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="endDate" className="text-xs font-medium text-gray-600">
+            End Date
+          </label>
+          <input
+            type="date"
+            id="endDate"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="rounded-lg border px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+          />
+        </div>
+
+        <button
+          onClick={loadPolicies}
+          disabled={busy}
+          className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+        >
+          {busy ? "Loading…" : "Apply Filter"}
+        </button>
+
+        {(startDate || endDate) && (
           <button
-            onClick={loadPolicies}
-            disabled={busy}
-            className="rounded-full border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            onClick={clearFilters}
+            className="rounded-full px-3 py-2 text-sm text-gray-500 hover:text-gray-700"
           >
-            {busy ? "Refreshing…" : "Refresh"}
+            Clear
+          </button>
+        )}
+
+        <div className="ml-auto">
+          <button
+            onClick={downloadAllExcel}
+            disabled={downloading || extractedCount === 0}
+            className="rounded-full bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            title={extractedCount === 0 ? "No extracted policies to download" : `Download ${extractedCount} policies as Excel`}
+          >
+            {downloading ? "Downloading…" : `Download Excel (${extractedCount})`}
           </button>
         </div>
       </div>
@@ -137,8 +220,17 @@ export default function PoliciesPage() {
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
 
       <div className="mt-6 overflow-hidden rounded-2xl border bg-white shadow-sm">
-        <div className="border-b bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
-          Recent (max 50)
+        <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-3">
+          <span className="text-xs font-medium text-gray-600">
+            {items.length} policies found
+          </span>
+          <button
+            onClick={loadPolicies}
+            disabled={busy}
+            className="text-xs text-gray-500 hover:text-gray-700 disabled:opacity-60"
+          >
+            {busy ? "Refreshing…" : "Refresh"}
+          </button>
         </div>
 
         {!isSignedIn ? (
@@ -149,12 +241,12 @@ export default function PoliciesPage() {
           <div className="px-4 py-6 text-sm text-gray-600">Loading…</div>
         ) : items.length === 0 ? (
           <div className="px-4 py-6 text-sm text-gray-600">
-            No policies yet. Upload a PDF to get started.
+            No policies found. {startDate || endDate ? "Try adjusting your date filters." : "Upload a PDF to get started."}
           </div>
         ) : (
           <div className="divide-y">
             {items.map((p) => {
-              const id = p.policy_id; // important: must be policy_id
+              const id = p.policy_id;
               const hasId = typeof id === "string" && id.length > 0;
 
               return (
@@ -186,13 +278,6 @@ export default function PoliciesPage() {
                         >
                           {p.has_extracted_json ? "Extracted" : "Pending"}
                         </span>
-                        {hasId ? (
-                          <span className="rounded bg-gray-100 px-2 py-0.5 font-mono">
-                            {id}
-                          </span>
-                        ) : (
-                          <span className="text-red-600">missing policy_id</span>
-                        )}
                       </div>
                     </div>
 
@@ -205,33 +290,6 @@ export default function PoliciesPage() {
                           View
                         </Link>
                       ) : null}
-
-                      <button
-                        onClick={() => hasId && download(id, "json")}
-                        disabled={!hasId || !p.has_extracted_json}
-                        className="rounded-full border px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                        title={!p.has_extracted_json ? "Extraction not completed yet" : "Download JSON"}
-                      >
-                        JSON
-                      </button>
-
-                      <button
-                        onClick={() => hasId && download(id, "csv")}
-                        disabled={!hasId || !p.has_extracted_json}
-                        className="rounded-full border px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                        title={!p.has_extracted_json ? "Extraction not completed yet" : "Download CSV"}
-                      >
-                        CSV
-                      </button>
-
-                      <button
-                        onClick={() => hasId && download(id, "xlsx")}
-                        disabled={!hasId || !p.has_extracted_json}
-                        className="rounded-full bg-black px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
-                        title={!p.has_extracted_json ? "Extraction not completed yet" : "Download Excel"}
-                      >
-                        Excel
-                      </button>
                     </div>
                   </div>
                 </div>

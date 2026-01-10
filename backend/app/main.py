@@ -1,7 +1,8 @@
 # backend/app/main.py
 from contextlib import asynccontextmanager
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
+from typing import Optional
 
 from fastapi import FastAPI, Depends, File, Query, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +21,7 @@ from app.db import get_db, engine
 from app.models import Job, Policy, JobStatus, Base
 from app.storage import save_pdf_bytes
 from app.worker import process_extraction_job
-from app.export_utils import json_to_csv_bytes, json_to_xlsx_bytes
+from app.export_utils import json_to_csv_bytes, json_to_xlsx_bytes, policies_to_xlsx_bytes
 
 from app import partner_models # Attach partner tables to Base.metadata.tables
 from app.partner_routes import router as partner_router
@@ -123,14 +124,24 @@ def get_job(job_id: str, user_id: str = Depends(get_current_user_id), db: Sessio
     }
 
 @app.get("/v1/policies")
-def list_policies(user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
-    policies = (
-        db.query(Policy)
-        .filter(Policy.user_id == user_id)
-        .order_by(Policy.created_at.desc())
-        .limit(50)
-        .all()
-    )
+def list_policies(
+    start_date: Optional[date] = Query(default=None, description="Filter policies created on or after this date (YYYY-MM-DD)"),
+    end_date: Optional[date] = Query(default=None, description="Filter policies created on or before this date (YYYY-MM-DD)"),
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    q = db.query(Policy).filter(Policy.user_id == user_id)
+    
+    if start_date:
+        start_datetime = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+        q = q.filter(Policy.created_at >= start_datetime)
+    
+    if end_date:
+        end_datetime = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
+        q = q.filter(Policy.created_at <= end_datetime)
+    
+    policies = q.order_by(Policy.created_at.desc()).limit(200).all()
+    
     return {
         "items": [
             {
@@ -143,6 +154,47 @@ def list_policies(user_id: str = Depends(get_current_user_id), db: Session = Dep
             for p in policies
         ]
     }
+
+
+@app.get("/v1/policies/download/bulk")
+def download_policies_bulk(
+    start_date: Optional[date] = Query(default=None, description="Filter policies created on or after this date (YYYY-MM-DD)"),
+    end_date: Optional[date] = Query(default=None, description="Filter policies created on or before this date (YYYY-MM-DD)"),
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Download all policies with extracted data as a single Excel file (one row per policy)."""
+    q = db.query(Policy).filter(Policy.user_id == user_id, Policy.extracted_json.isnot(None))
+    
+    if start_date:
+        start_datetime = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+        q = q.filter(Policy.created_at >= start_datetime)
+    
+    if end_date:
+        end_datetime = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
+        q = q.filter(Policy.created_at <= end_datetime)
+    
+    policies = q.order_by(Policy.created_at.desc()).limit(500).all()
+    
+    if not policies:
+        raise HTTPException(status_code=404, detail="No extracted policies found for the given date range")
+    
+    xlsx_bytes = policies_to_xlsx_bytes(policies)
+    
+    # Generate filename with date range
+    filename_parts = ["policies"]
+    if start_date:
+        filename_parts.append(f"from_{start_date.isoformat()}")
+    if end_date:
+        filename_parts.append(f"to_{end_date.isoformat()}")
+    filename = "_".join(filename_parts) + ".xlsx"
+    
+    return StreamingResponse(
+        iter([xlsx_bytes]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
 
 @app.get("/v1/policies/{policy_id}")
 def get_policy(policy_id: str, user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
