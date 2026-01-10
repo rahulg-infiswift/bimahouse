@@ -106,13 +106,15 @@ export default function PoliciesPage() {
       const blob = await res.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
 
-      // Extract filename from Content-Disposition header or use default
-      const contentDisposition = res.headers.get("Content-Disposition");
-      let filename = "policies.xlsx";
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="?(.+)"?/);
-        if (match) filename = match[1];
+      // Generate filename based on date filters
+      const filenameParts = ["policies"];
+      if (startDate) filenameParts.push(`from_${startDate}`);
+      if (endDate) filenameParts.push(`to_${endDate}`);
+      if (!startDate && !endDate) {
+        // Add today's date if no filters
+        filenameParts.push(new Date().toISOString().split("T")[0]);
       }
+      const filename = filenameParts.join("_") + ".xlsx";
 
       const a = document.createElement("a");
       a.href = downloadUrl;
@@ -170,6 +172,7 @@ export default function PoliciesPage() {
             type="date"
             id="startDate"
             value={startDate}
+            max={endDate || new Date().toISOString().split("T")[0]}
             onChange={(e) => setStartDate(e.target.value)}
             className="rounded-lg border px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
           />
@@ -183,6 +186,8 @@ export default function PoliciesPage() {
             type="date"
             id="endDate"
             value={endDate}
+            min={startDate || undefined}
+            max={new Date().toISOString().split("T")[0]}
             onChange={(e) => setEndDate(e.target.value)}
             className="rounded-lg border px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
           />
