@@ -16,6 +16,9 @@ type LeadSummary = {
 
 type LeadListItem = {
   lead_id: string;
+  display_id: string;  // Human-readable ID (BHL for leads, BHP for partners)
+  lead_display_id: string;  // Always BHL-XXXX
+  partner_display_id?: string | null;  // BHP-XXXX when approved
   full_name: string;
   email: string;
   phone: string;
@@ -207,7 +210,13 @@ export default function AdminLeadsPage() {
             {items.map((r) => (
               <div key={r.lead_id} className="px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="font-medium">{r.full_name}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{r.lead_display_id}</span>
+                    {r.partner_display_id && (
+                      <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded">{r.partner_display_id}</span>
+                    )}
+                    <span className="font-medium">{r.full_name}</span>
+                  </div>
                   <div className="text-xs text-gray-600">
                     {r.email}
                     {r.phone ? ` • ${r.phone}` : ""}

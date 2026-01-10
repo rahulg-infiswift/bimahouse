@@ -6,15 +6,16 @@ import hashlib
 
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 
 from .config import settings
 from .db import get_db
 from .auth import get_current_user_id
-from .partner_models import PartnerLead, PartnerLeadDocument, LeadStatus, DocType
+from .partner_models import PartnerLead, PartnerLeadDocument, PartnerProfile, LeadStatus, DocType
 from .partner_schemas import (
     LeadCreateIn, LeadCreateOut, LeadSummaryOut, LeadListItem, LeadDetailOut,
-    KycUpdateIn, OtpSendOut, OtpVerifyIn, OtpVerifyOut, AdminLeadUpdateIn
+    KycUpdateIn, OtpSendOut, OtpVerifyIn, OtpVerifyOut, AdminLeadUpdateIn,
+    PartnerProfileOut, PartnerProfileIn
 )
 from .storage import save_partner_doc_bytes
 from .email_utils import send_email  # NEW helper file below
@@ -49,6 +50,78 @@ def _generate_otp() -> str:
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
+def _profile_to_out(profile: Optional[PartnerProfile]) -> Optional[PartnerProfileOut]:
+    """Convert PartnerProfile model to output schema"""
+    if not profile:
+        return None
+    return PartnerProfileOut(
+        date_of_birth=profile.date_of_birth.isoformat() if profile.date_of_birth else None,
+        gender=profile.gender,
+        father_name=profile.father_name,
+        pan_number=profile.pan_number,
+        aadhaar_number=profile.aadhaar_number,
+        address_line1=profile.address_line1,
+        address_line2=profile.address_line2,
+        city=profile.city,
+        state=profile.state,
+        pincode=profile.pincode,
+        bank_name=profile.bank_name,
+        branch_name=profile.branch_name,
+        account_holder_name=profile.account_holder_name,
+        account_number=profile.account_number,
+        ifsc_code=profile.ifsc_code,
+    )
+
+
+def _update_profile(db: Session, lead: PartnerLead, profile_in: PartnerProfileIn) -> PartnerProfile:
+    """Create or update PartnerProfile for a lead"""
+    from datetime import date as date_type
+    
+    profile = lead.profile_data
+    if not profile:
+        profile = PartnerProfile(lead_id=lead.id)
+        db.add(profile)
+    
+    # Update fields if provided
+    if profile_in.date_of_birth:
+        try:
+            profile.date_of_birth = date_type.fromisoformat(profile_in.date_of_birth)
+        except ValueError:
+            pass  # Invalid date format, skip
+    
+    if profile_in.gender is not None:
+        profile.gender = profile_in.gender
+    if profile_in.father_name is not None:
+        profile.father_name = profile_in.father_name
+    if profile_in.pan_number is not None:
+        profile.pan_number = profile_in.pan_number.upper().strip() if profile_in.pan_number else None
+    if profile_in.aadhaar_number is not None:
+        profile.aadhaar_number = profile_in.aadhaar_number.replace(" ", "").strip() if profile_in.aadhaar_number else None
+    if profile_in.address_line1 is not None:
+        profile.address_line1 = profile_in.address_line1
+    if profile_in.address_line2 is not None:
+        profile.address_line2 = profile_in.address_line2
+    if profile_in.city is not None:
+        profile.city = profile_in.city
+    if profile_in.state is not None:
+        profile.state = profile_in.state
+    if profile_in.pincode is not None:
+        profile.pincode = profile_in.pincode.strip() if profile_in.pincode else None
+    if profile_in.bank_name is not None:
+        profile.bank_name = profile_in.bank_name
+    if profile_in.branch_name is not None:
+        profile.branch_name = profile_in.branch_name
+    if profile_in.account_holder_name is not None:
+        profile.account_holder_name = profile_in.account_holder_name
+    if profile_in.account_number is not None:
+        profile.account_number = profile_in.account_number.strip() if profile_in.account_number else None
+    if profile_in.ifsc_code is not None:
+        profile.ifsc_code = profile_in.ifsc_code.upper().strip() if profile_in.ifsc_code else None
+    
+    profile.updated_at = utcnow()
+    return profile
+
+
 def _lead_to_detail(db: Session, lead: PartnerLead) -> LeadDetailOut:
     docs = (
         db.query(PartnerLeadDocument)
@@ -58,6 +131,9 @@ def _lead_to_detail(db: Session, lead: PartnerLead) -> LeadDetailOut:
     )
     return LeadDetailOut(
         lead_id=str(lead.id),
+        display_id=lead.display_id,
+        lead_display_id=lead.lead_display_id,
+        partner_display_id=lead.partner_display_id,
         full_name=lead.full_name,
         email=lead.lead_email,
         phone=lead.phone,
@@ -66,7 +142,7 @@ def _lead_to_detail(db: Session, lead: PartnerLead) -> LeadDetailOut:
         email_verified_at=_fmt(lead.email_verified_at),
         otp_last_sent_at=_fmt(lead.otp_last_sent_at),
         otp_expires_at=_fmt(lead.otp_expires_at),
-        profile=lead.profile,
+        profile=_profile_to_out(lead.profile_data),
         documents=[
             {
                 "doc_id": str(d.id),
@@ -115,7 +191,7 @@ def admin_list_leads(
 ):
     require_admin(user_id)
 
-    q = db.query(PartnerLead).order_by(PartnerLead.updated_at.desc())
+    q = db.query(PartnerLead).order_by(PartnerLead.created_at.desc())
     if status:
         q = q.filter(PartnerLead.status == status)
 
@@ -123,6 +199,9 @@ def admin_list_leads(
     return [
         LeadListItem(
             lead_id=str(r.id),
+            display_id=r.display_id,
+            lead_display_id=r.lead_display_id,
+            partner_display_id=r.partner_display_id,
             full_name=r.full_name,
             email=r.lead_email,
             phone=r.phone,
@@ -159,9 +238,13 @@ def admin_create_lead(
     )
     db.add(lead)
     db.commit()
+    db.refresh(lead)  # Refresh to get the generated lead_number
 
     return LeadCreateOut(
         lead_id=str(lead.id),
+        display_id=lead.display_id,
+        lead_display_id=lead.lead_display_id,
+        partner_display_id=lead.partner_display_id,
         status=lead.status,
         email_verified=False,
     )
@@ -288,6 +371,8 @@ def admin_update_lead(
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
+    assign_partner_number = False
+    
     if payload.status is not None:
         allowed = {
             LeadStatus.INVITED,
@@ -299,10 +384,14 @@ def admin_update_lead(
         }
         if payload.status not in allowed:
             raise HTTPException(status_code=400, detail=f"Invalid status. Allowed: {sorted(list(allowed))}")
+        
+        # Assign partner_number when lead is first approved (done atomically in commit below)
+        assign_partner_number = payload.status == LeadStatus.APPROVED and lead.partner_number is None
+        
         lead.status = payload.status
 
     if payload.profile is not None:
-        lead.profile = payload.profile
+        _update_profile(db, lead, payload.profile)
 
     if payload.internal_notes is not None:
         lead.internal_notes = payload.internal_notes
@@ -311,6 +400,16 @@ def admin_update_lead(
         lead.rejection_reason = payload.rejection_reason
 
     lead.updated_at = utcnow()
+    
+    # Atomically assign partner_number using nextval only if approval succeeds
+    if assign_partner_number:
+        db.flush()  # Flush other changes first
+        result = db.execute(
+            text("UPDATE partner_leads SET partner_number = nextval('partner_number_seq') WHERE id = :lead_id RETURNING partner_number"),
+            {"lead_id": str(lead.id)}
+        )
+        lead.partner_number = result.scalar()
+    
     db.commit()
 
     return _lead_to_detail(db, lead)
