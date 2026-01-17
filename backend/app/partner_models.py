@@ -40,6 +40,9 @@ class PartnerLead(Base):
     # Human-readable sequential Partner ID (BHP-0001, BHP-0002, etc.)
     # Assigned when lead is approved - separate counter from lead_number
     partner_number = Column(Integer, nullable=True, unique=True, index=True)
+    
+    # Clerk user ID - set when partner logs in via Clerk (links policies to partner)
+    clerk_user_id = Column(String, nullable=True, unique=True, index=True)
 
     # Entered by admin
     full_name = Column(String, nullable=False)

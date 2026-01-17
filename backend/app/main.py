@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from rq import Queue, Retry
 from redis import Redis
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from pathlib import Path
 import sys
 
@@ -22,10 +22,24 @@ from app.models import Job, Policy, JobStatus, Base
 from app.storage import save_pdf_bytes
 from app.worker import process_extraction_job
 from app.export_utils import json_to_csv_bytes, json_to_xlsx_bytes, policies_to_xlsx_bytes
+from app.clerk_client import get_primary_email_and_verified
 
 from app import partner_models # Attach partner tables to Base.metadata.tables
+from app.partner_models import PartnerLead
 from app.partner_routes import router as partner_router
 
+import logging
+Path("logs").mkdir(exist_ok=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("logs/main.log"),
+        logging.StreamHandler(),
+    ],
+    force=True,
+)
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -179,7 +193,44 @@ def download_policies_bulk(
     if not policies:
         raise HTTPException(status_code=404, detail="No extracted policies found for the given date range")
     
-    xlsx_bytes = policies_to_xlsx_bytes(policies)
+    # Fetch partner info by looking up the user's email from Clerk, then matching to partner_leads.email
+    partners_map = {}
+    user_ids = list(set(p.user_id for p in policies))
+    logger.info(f"Fetching partner info for user_ids: {user_ids}")
+    for uid in user_ids:
+        # First try to find partner by clerk_user_id (if already linked)
+        partner = (
+            db.query(PartnerLead)
+            .options(joinedload(PartnerLead.profile_data))
+            .filter(PartnerLead.clerk_user_id == uid)
+            .first()
+        )
+        
+        if not partner:
+            # Fall back to email matching via Clerk API
+            try:
+                email, _ = get_primary_email_and_verified(uid)
+                logger.info(f"Fetched email for user {uid}: {email}")
+                if email:
+                    partner = (
+                        db.query(PartnerLead)
+                        .options(joinedload(PartnerLead.profile_data))
+                        .filter(PartnerLead.lead_email == email)
+                        .first()
+                    )
+                    logger.info(f"Matched partner for email {email}: {partner}")
+                    # Optionally update clerk_user_id for future lookups
+                    if partner and not partner.clerk_user_id:
+                        partner.clerk_user_id = uid
+                        db.commit()
+            except Exception:
+                # If Clerk API fails, continue without partner info
+                pass
+        
+        if partner:
+            partners_map[uid] = partner
+    
+    xlsx_bytes = policies_to_xlsx_bytes(policies, partners_map)
     
     # Generate filename with date range
     filename_parts = ["policies"]

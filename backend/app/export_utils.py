@@ -3,10 +3,56 @@ from __future__ import annotations
 
 import csv
 import io
-from typing import Any, Dict, Iterable, List, Tuple
+import os
+from decimal import Decimal
+from typing import Any, Dict, Iterable, List, Tuple, Optional
 
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
+
+
+# Commission configuration - loaded from grid_points.csv (keyed by partner_bhp_id)
+_commission_config: Optional[Dict[str, Dict[str, Any]]] = None
+
+# Default commission rates
+DEFAULT_COMMISSION = {
+    "base_for_po": "Net",
+    "base_rate": Decimal("0.39"),
+    "dev_rate": Decimal("0.03"),
+}
+
+
+def _load_commission_config() -> Dict[str, Dict[str, Any]]:
+    """Load commission rates from grid_points.csv, keyed by partner_bhp_id"""
+    global _commission_config
+    if _commission_config is not None:
+        return _commission_config
+    
+    _commission_config = {}
+    
+    # Try to load from file
+    csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "grid_points.csv")
+    if os.path.exists(csv_path):
+        with open(csv_path, "r") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                partner_id = row.get("partner_bhp_id", "").strip()
+                if partner_id:
+                    _commission_config[partner_id] = {
+                        "base_for_po": row.get("base_for_po", "Net").strip(),
+                        "base_rate": Decimal(row.get("base_rate", "0.39")),
+                        "dev_rate": Decimal(row.get("dev_rate", "0.03")),
+                    }
+    
+    return _commission_config
+
+
+def get_commission_rates(partner_bhp_id: Optional[str] = None) -> Dict[str, Any]:
+    """Get commission rates for a specific partner by their BHP ID"""
+    config = _load_commission_config()
+    if partner_bhp_id and partner_bhp_id in config:
+        return config[partner_bhp_id]
+    return DEFAULT_COMMISSION.copy()
 
 
 def _stringify(v: Any) -> str:
@@ -17,7 +63,6 @@ def _stringify(v: Any) -> str:
     # dict/list/etc
     import json
     return json.dumps(v, ensure_ascii=False)
-
 
 def json_to_path_rows(data: Any) -> List[Tuple[str, str]]:
     """
@@ -140,10 +185,69 @@ def _flatten_json(data: Any, prefix: str = "") -> Dict[str, str]:
     return result
 
 
-def policies_to_xlsx_bytes(policies: List[Any]) -> bytes:
+def _extract_premium_from_policy(extracted_json: Dict[str, Any]) -> Optional[Decimal]:
+    """
+    Extract premium value from policy extracted JSON.
+    Looks for premium.total_premium_payable first, then falls back to other common fields.
+    """
+    if not extracted_json:
+        return None
+    
+    # First, check for the structured premium object (from PolicyExtractV1)
+    if "premium" in extracted_json and isinstance(extracted_json["premium"], dict):
+        premium_obj = extracted_json["premium"]
+        if "total_premium_payable" in premium_obj:
+            try:
+                val = premium_obj["total_premium_payable"]
+                if val is not None and val != "":
+                    if isinstance(val, str):
+                        val = val.replace(",", "").replace("₹", "").replace("Rs.", "").replace("Rs", "").strip()
+                    return Decimal(str(val))
+            except (ValueError, TypeError):
+                pass
+        # Also try total_package_premium_A_plus_B as fallback
+        if "total_package_premium_A_plus_B" in premium_obj:
+            try:
+                val = premium_obj["total_package_premium_A_plus_B"]
+                if val is not None and val != "":
+                    if isinstance(val, str):
+                        val = val.replace(",", "").replace("₹", "").replace("Rs.", "").replace("Rs", "").strip()
+                    return Decimal(str(val))
+            except (ValueError, TypeError):
+                pass
+    
+    # Fallback: check top-level premium field names
+    premium_fields = [
+        "total_premium_payable",
+        "net_premium",
+        "total_premium",
+        "gross_premium",
+        "policy_premium",
+        "premium_amount",
+    ]
+    
+    for field in premium_fields:
+        if field in extracted_json:
+            try:
+                val = extracted_json[field]
+                if val is not None and val != "":
+                    if isinstance(val, str):
+                        val = val.replace(",", "").replace("₹", "").replace("Rs.", "").replace("Rs", "").strip()
+                    return Decimal(str(val))
+            except (ValueError, TypeError):
+                continue
+    
+    return None
+
+
+def policies_to_xlsx_bytes(policies: List[Any], partners_map: Optional[Dict[str, Any]] = None) -> bytes:
     """
     Creates an XLSX with one row per policy.
-    All extracted JSON fields are flattened into columns.
+    Includes partner details and commission calculations.
+    
+    Args:
+        policies: List of Policy objects
+        partners_map: Dict mapping user_id to PartnerLead objects (optional)
     """
     wb = Workbook()
     ws = wb.active
@@ -154,13 +258,56 @@ def policies_to_xlsx_bytes(policies: List[Any]) -> bytes:
     flattened_policies: List[Dict[str, str]] = []
     
     for policy in policies:
-        flat = {
-            "policy_id": str(policy.id),
-            "original_filename": policy.original_filename,
-            "created_at": policy.created_at.isoformat() if policy.created_at else "",
-            "schema_version": policy.schema_version or "",
-        }
+        flat: Dict[str, str] = {}
         
+        # Partner details (if available)
+        partner = partners_map.get(policy.user_id) if partners_map else None
+        partner_bhp_id = None
+        if partner:
+            flat["partner_name"] = partner.full_name or ""
+            flat["partner_bhl_id"] = partner.lead_display_id or ""
+            flat["partner_bhp_id"] = partner.partner_display_id or ""
+            partner_bhp_id = partner.partner_display_id
+            # Get city from profile_data
+            if partner.profile_data:
+                flat["partner_city"] = partner.profile_data.city or ""
+            else:
+                flat["partner_city"] = ""
+        else:
+            flat["partner_name"] = ""
+            flat["partner_bhl_id"] = ""
+            flat["partner_bhp_id"] = ""
+            flat["partner_city"] = ""
+        
+        # Policy metadata
+        flat["policy_id"] = str(policy.id)
+        flat["original_filename"] = policy.original_filename
+        flat["created_at"] = policy.created_at.isoformat() if policy.created_at else ""
+        flat["schema_version"] = policy.schema_version or ""
+        
+        # Extract premium for commission calculations
+        premium = _extract_premium_from_policy(policy.extracted_json)
+        if premium is None:
+            premium = Decimal("15000")
+        
+        # Get partner-specific commission rates from grid_points.csv
+        commission_rates = get_commission_rates(partner_bhp_id)
+        base_for_po = commission_rates["base_for_po"]
+        base_rate = commission_rates["base_rate"]
+        dev_rate = commission_rates["dev_rate"]
+        out_rate = base_rate + dev_rate
+        
+        # Commission details
+        flat["base_for_po_calculation"] = base_for_po
+        flat["commissionable_premium"] = str(premium) if premium else ""
+        flat["base_rate"] = f"{float(base_rate) * 100:.1f}%"
+        flat["base_amount"] = str(round(premium * base_rate, 2)) if premium else ""
+        flat["dev_rate"] = f"{float(dev_rate) * 100:.1f}%"
+        flat["dev_amount"] = str(round(premium * dev_rate, 2)) if premium else ""
+        flat["out_rate"] = f"{float(out_rate) * 100:.1f}%"
+        flat["out_amount"] = str(round(premium * out_rate, 2)) if premium else ""
+        
+        # Add extracted JSON fields
         if policy.extracted_json:
             extracted_flat = _flatten_json(policy.extracted_json)
             flat.update(extracted_flat)
@@ -168,10 +315,16 @@ def policies_to_xlsx_bytes(policies: List[Any]) -> bytes:
         all_keys.update(flat.keys())
         flattened_policies.append(flat)
     
-    # Sort keys: metadata first, then extracted fields
+    # Define column order: partner info first, then commission, then policy metadata, then extracted fields
+    partner_keys = ["partner_name", "partner_bhl_id", "partner_bhp_id", "partner_city"]
+    commission_keys = [
+        "base_for_po_calculation", "commissionable_premium", 
+        "base_rate", "base_amount", "dev_rate", "dev_amount", "out_rate", "out_amount"
+    ]
     metadata_keys = ["policy_id", "original_filename", "created_at", "schema_version"]
-    extracted_keys = sorted(k for k in all_keys if k not in metadata_keys)
-    ordered_keys = metadata_keys + extracted_keys
+    priority_keys = partner_keys + commission_keys + metadata_keys
+    extracted_keys = sorted(k for k in all_keys if k not in priority_keys)
+    ordered_keys = priority_keys + extracted_keys
     
     # Write header row
     ws.append(ordered_keys)

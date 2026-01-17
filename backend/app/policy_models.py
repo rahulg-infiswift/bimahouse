@@ -200,7 +200,7 @@ class PolicyExtractV1(BaseModel):
     vehicle: Vehicle = Field(default_factory=Vehicle)
     previous_policy: PreviousPolicy = Field(default_factory=PreviousPolicy)
     idv: IDV = Field(default_factory=IDV)
-    # premium: Premium = Field(default_factory=Premium)
+    premium: Premium = Field(default_factory=Premium)
     # deductibles_and_clauses: DeductiblesAndClauses = Field(default_factory=DeductiblesAndClauses)
     # add_on_covers: List[AddOnCover] = Field(default_factory=list)
     # limits_and_pa_cover: LimitsAndPACover = Field(default_factory=LimitsAndPACover)

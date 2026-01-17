@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r /src/requirements.txt
 COPY app /src/app
 COPY alembic.ini /src/alembic.ini
 COPY alembic /src/alembic
+COPY grid_points.csv /src/grid_points.csv
 
 ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
