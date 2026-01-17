@@ -206,7 +206,7 @@ export default function AdminLeadDetailPage() {
         <div>
           <div className="text-sm text-gray-500">
             <Link href="/admin/leads" className="underline">
-              Manage Leads
+              Manage Partner Leads
             </Link>{" "}
             / Lead
           </div>

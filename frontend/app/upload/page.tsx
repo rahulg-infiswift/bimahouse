@@ -47,7 +47,6 @@ export default function UploadPage() {
   }
 
   async function pollJob(token: string, jobId: string) {
-    // Poll until done/failed (simple Phase-1 polling)
     for (let i = 0; i < 60; i++) {
       const res = await fetchWithAuth(`/v1/jobs/${jobId}`, token);
       if (!res.ok) {
@@ -111,79 +110,242 @@ export default function UploadPage() {
     }
   }
 
+  const getStatusIcon = () => {
+    if (!job) return null;
+    switch (job.status) {
+      case "queued":
+        return (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
+            <svg className="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        );
+      case "running":
+        return (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+            <svg className="h-5 w-5 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+        );
+      case "done":
+        return (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+            <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        );
+      case "failed":
+        return (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+            <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        );
+    }
+  };
+
+  const getStatusLabel = () => {
+    if (!job) return null;
+    const labels: Record<string, { text: string; color: string }> = {
+      queued: { text: "Queued", color: "bg-slate-100 text-slate-700" },
+      running: { text: "Processing", color: "bg-blue-100 text-blue-700" },
+      done: { text: "Completed", color: "bg-emerald-100 text-emerald-700" },
+      failed: { text: "Failed", color: "bg-red-100 text-red-700" },
+    };
+    const { text, color } = labels[job.status] || labels.queued;
+    return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${color}`}>{text}</span>;
+  };
+
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Upload Policy</h1>
-        <Link className="text-sm text-gray-600 hover:text-gray-900" href="/policies">
-          View policies →
-        </Link>
-      </div>
-
-      <form onSubmit={onSubmit} className="mt-6 rounded-2xl border bg-white p-6 shadow-sm">
-        <label className="block text-sm font-medium text-gray-700">
-          Policy PDF
-        </label>
-
-        <input
-          type="file"
-          accept="application/pdf"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="mt-2 block w-full text-sm file:mr-4 file:rounded-full file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm file:font-medium hover:file:bg-gray-200"
-        />
-
-        <button
-          type="submit"
-          disabled={busy}
-          className="mt-5 inline-flex items-center rounded-full bg-black px-5 py-2 text-sm font-medium text-white disabled:opacity-60"
-        >
-          {busy ? "Extracting…" : "Start extraction"}
-        </button>
-
-        {error ? (
-          <p className="mt-4 text-sm text-red-600">{error}</p>
-        ) : null}
-      </form>
-
-      {extractResp ? (
-        <div className="mt-6 rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="text-base font-medium">Submitted</h2>
-          <div className="mt-2 text-sm text-gray-700">
+    <main className="py-12 px-4 sm:px-6">
+      <div className="mx-auto max-w-2xl">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
             <div>
-              <span className="text-gray-500">Job ID:</span>{" "}
-              <code className="rounded bg-gray-100 px-1 py-0.5">{extractResp.job_id}</code>
+              <h1 className="text-2xl font-bold text-slate-900">Upload Policy</h1>
+              <p className="mt-1 text-sm text-slate-600">
+                Upload a PDF document to extract policy details using AI.
+              </p>
             </div>
-            <div className="mt-1">
-              <span className="text-gray-500">Policy ID:</span>{" "}
-              <code className="rounded bg-gray-100 px-1 py-0.5">{extractResp.policy_id}</code>
+            <Link
+              href="/policies"
+              className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              View policies
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+
+        {/* Upload Form */}
+        <form onSubmit={onSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Policy PDF
+            </label>
+            <div className="relative">
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="hidden"
+                id="file-upload"
+              />
+              <label
+                htmlFor="file-upload"
+                className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors"
+              >
+                {file ? (
+                  <>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 mb-3">
+                      <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-slate-900">{file.name}</span>
+                    <span className="mt-1 text-xs text-slate-500">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 mb-3">
+                      <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-slate-700">Click to upload PDF</span>
+                    <span className="mt-1 text-xs text-slate-500">Max file size: 20MB</span>
+                  </>
+                )}
+              </label>
             </div>
           </div>
 
-          {job ? (
-            <div className="mt-4 text-sm">
-              <div>
-                <span className="text-gray-500">Status:</span>{" "}
-                <span className="font-medium">{job.status}</span>
-              </div>
-              {job.error ? (
-                <div className="mt-1 text-red-600">
-                  <span className="text-gray-500">Error:</span> {job.error}
-                </div>
-              ) : null}
-              {job.status === "done" ? (
-                <div className="mt-4">
-                  <Link
-                    className="inline-flex items-center rounded-full bg-[#6c47ff] px-4 py-2 text-sm font-medium text-white"
-                    href="/policies"
-                  >
-                    Go to Policies
-                  </Link>
-                </div>
-              ) : null}
+          <button
+            type="submit"
+            disabled={busy || !file}
+            className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-200 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+          >
+            {busy ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Extracting...
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Start Extraction
+              </>
+            )}
+          </button>
+
+          {error && (
+            <div className="mt-4 flex items-start gap-3 rounded-xl bg-red-50 border border-red-100 p-4">
+              <svg className="h-5 w-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-red-700">{error}</p>
             </div>
-          ) : null}
+          )}
+        </form>
+
+        {/* Job Status */}
+        {extractResp && (
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-start gap-4">
+              {getStatusIcon()}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-base font-semibold text-slate-900">Extraction Job</h2>
+                  {getStatusLabel()}
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <span className="text-slate-400">Job:</span>
+                    <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono text-slate-700">{extractResp.job_id.slice(0, 8)}...</code>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <span className="text-slate-400">Policy:</span>
+                    <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono text-slate-700">{extractResp.policy_id.slice(0, 8)}...</code>
+                  </div>
+                </div>
+
+                {job?.error && (
+                  <div className="mt-3 rounded-lg bg-red-50 border border-red-100 p-3">
+                    <p className="text-sm text-red-700">{job.error}</p>
+                  </div>
+                )}
+
+                {job?.status === "done" && (
+                  <div className="mt-4">
+                    <Link
+                      href={`/policies/${extractResp.policy_id}`}
+                      className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      View Extracted Policy
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Progress indicator for running state */}
+            {job?.status === "running" && (
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-600 rounded-full animate-pulse" style={{ width: "60%" }}></div>
+                  </div>
+                  <span className="text-xs text-slate-500">Processing...</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Help Section */}
+        <div className="mt-8 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-5">
+          <h3 className="text-sm font-semibold text-slate-900 mb-2">Supported Documents</h3>
+          <ul className="space-y-2 text-sm text-slate-600">
+            <li className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              Motor Insurance Policies (Private Car, Two-Wheeler)
+            </li>
+            <li className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              Health Insurance Policies
+            </li>
+            <li className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              PDF format only (max 20MB)
+            </li>
+          </ul>
         </div>
-      ) : null}
+      </div>
     </main>
   );
 }
