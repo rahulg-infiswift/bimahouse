@@ -48,7 +48,7 @@ class PartnerLead(Base):
     lead_email = Column(String, nullable=False, index=True)
     phone = Column(String, nullable=False)
 
-    status = Column(String, nullable=False, default=LeadStatus.INVITED, index=True)
+    status = Column(String, nullable=False, default=LeadStatus.IN_PROGRESS, index=True)
 
     # Email OTP verification fields (admin-driven)
     email_verified_at = Column(DateTime(timezone=True), nullable=True)

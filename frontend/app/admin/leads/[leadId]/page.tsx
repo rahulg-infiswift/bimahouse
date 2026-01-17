@@ -63,7 +63,7 @@ const DOC_TYPES = [
   { key: "other", label: "Other" },
 ];
 
-const STATUSES = ["invited", "in_progress", "submitted", "in_review", "approved", "rejected"] as const;
+const STATUSES = ["in_progress", "submitted", "in_review", "approved", "rejected"] as const;
 
 const INDIAN_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -101,7 +101,7 @@ export default function AdminLeadDetailPage() {
 
   const [data, setData] = useState<LeadDetail | null>(null);
   const [profile, setProfile] = useState<PartnerProfile>(emptyProfile);
-  const [status, setStatus] = useState<string>("invited");
+  const [status, setStatus] = useState<string>("in_progress");
 
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);

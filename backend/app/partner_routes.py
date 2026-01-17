@@ -225,7 +225,7 @@ def admin_create_lead(
         full_name=payload.full_name.strip(),
         lead_email=str(payload.email).strip().lower(),
         phone=(payload.phone.strip() if payload.phone else None),
-        status=LeadStatus.IN_PROGRESS,  # Start as IN_PROGRESS (INVITED is deprecated)
+        status=LeadStatus.IN_PROGRESS,  # Start as IN_PROGRESS
         created_at=utcnow(),
         updated_at=utcnow(),
         profile=None,
