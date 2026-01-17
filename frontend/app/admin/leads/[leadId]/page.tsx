@@ -201,54 +201,61 @@ export default function AdminLeadDetailPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between gap-4">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 mb-6">
         <div>
-          <div className="text-sm text-gray-500">
-            <Link href="/admin/leads" className="underline">
-              Manage Partner Leads
+          <div className="text-sm text-slate-500">
+            <Link href="/admin/leads" className="text-blue-600 hover:text-blue-700">
+              Partner Leads
             </Link>{" "}
-            / Lead
+            / Details
           </div>
-          <h1 className="text-2xl font-semibold mt-1">Lead Details</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mt-1">Lead Details</h1>
         </div>
 
-        <button onClick={() => router.back()} className="rounded-md border px-3 py-2 text-sm">
+        <button 
+          onClick={() => router.back()} 
+          className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+        >
           Back
         </button>
       </div>
 
       {loading ? (
-        <div className="mt-6 text-sm text-gray-600">Loading…</div>
+        <div className="text-sm text-slate-600">Loading…</div>
       ) : err ? (
-        <div className="mt-6 rounded-md border border-red-200 bg-red-50 p-3 text-red-800 text-sm whitespace-pre-wrap">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 text-sm whitespace-pre-wrap">
           {err}
         </div>
       ) : !data ? (
-        <div className="mt-6 text-sm text-gray-600">Not found.</div>
+        <div className="text-sm text-slate-600">Not found.</div>
       ) : (
         <>
           {ok && (
-            <div className="mt-6 rounded-md border border-green-200 bg-green-50 p-3 text-green-800 text-sm">
+            <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-green-700 text-sm">
               {ok}
             </div>
           )}
 
-          {/* Top summary */}
-          <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            <div className="rounded-lg border p-4">
-              <div className="text-xs text-gray-500">Partner</div>
-              <div className="mt-1 font-medium">{data.full_name}</div>
-              <div className="mt-1 text-sm text-gray-700">{data.email}</div>
-              {data.phone ? <div className="text-sm text-gray-700">{data.phone}</div> : null}
+          {/* Top summary cards */}
+          <div className="grid gap-4 lg:grid-cols-3 mb-6">
+            {/* Partner Info */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Partner</div>
+              <div className="mt-2 text-lg font-semibold text-slate-900">{data.full_name}</div>
+              <div className="mt-1 text-sm text-slate-600">{data.email}</div>
+              {data.phone && <div className="text-sm text-slate-600">{data.phone}</div>}
 
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="text-xs rounded-full border px-2 py-1">{data.status}</span>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium rounded-full bg-slate-100 text-slate-700 px-2.5 py-1">
+                  {data.status}
+                </span>
                 <span
-                  className={`text-xs rounded-full border px-2 py-1 ${
+                  className={`text-xs font-medium rounded-full px-2.5 py-1 ${
                     data.email_verified
-                      ? "bg-green-50 border-green-200 text-green-800"
-                      : "bg-yellow-50 border-yellow-200 text-yellow-800"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-amber-100 text-amber-700"
                   }`}
                 >
                   {data.email_verified ? "Email verified" : "Email not verified"}
@@ -256,80 +263,77 @@ export default function AdminLeadDetailPage() {
               </div>
             </div>
 
-            <div className="rounded-lg border p-4">
-              <div className="text-xs text-gray-500">Lead ID</div>
-              <div className="mt-2">
-                <div className="font-medium text-xl">{data.lead_display_id}</div>
-              </div>
+            {/* IDs */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Lead ID</div>
+              <div className="mt-2 text-xl font-bold text-slate-900">{data.lead_display_id}</div>
               {data.partner_display_id && (
-                <div className="mt-3">
-                  <div className="text-xs text-gray-500">Partner ID</div>
-                  <div className="font-medium text-xl text-green-700">{data.partner_display_id}</div>
+                <div className="mt-4">
+                  <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Partner ID</div>
+                  <div className="mt-1 text-xl font-bold text-green-600">{data.partner_display_id}</div>
                 </div>
               )}
             </div>
 
-            <div className="rounded-lg border p-4">
-              <div className="text-xs text-gray-500">Actions</div>
+            {/* Status Actions */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Status</div>
 
-              <label className="mt-2 grid gap-1">
-                <span className="text-sm">Status</span>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="border rounded-md px-3 py-2 text-sm"
-                  disabled={busy}
-                >
-                  {STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="mt-2 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={busy}
+              >
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
 
               <button
                 onClick={saveProfileAndStatus}
                 disabled={busy}
-                className="mt-3 w-full rounded-md bg-black text-white px-4 py-2 text-sm disabled:opacity-50"
+                className="mt-3 w-full rounded-lg bg-blue-600 text-white px-4 py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
                 Save Status
               </button>
 
-              <div className="mt-2 text-xs text-gray-600">
-                Use <b>in_progress</b> while collecting docs. Set <b>submitted</b> when complete.
-              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                Use <span className="font-medium">in_progress</span> while collecting docs.
+              </p>
             </div>
           </div>
 
           {/* Partner Details Form */}
-          <div className="mt-6 rounded-lg border p-4">
-            <div className="font-medium">Partner Details</div>
-            <div className="text-xs text-gray-600 mt-1">
-              Enter partner's personal information, address, and bank details.
-            </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-6 mb-6">
+            <h2 className="text-lg font-semibold text-slate-900">Partner Details</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Personal information, address, and bank details.
+            </p>
 
-            <div className="mt-4 grid gap-6">
+            <div className="mt-6 space-y-6">
               {/* Personal Details */}
               <div>
-                <div className="text-sm font-medium text-gray-700 mb-3">Personal Details</div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <label className="grid gap-1">
-                    <span className="text-xs text-gray-600">Date of Birth</span>
+                <h3 className="text-sm font-medium text-slate-700 mb-3">Personal Details</h3>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-600">Date of Birth</span>
                     <input
                       type="date"
                       value={profile.date_of_birth || ""}
                       onChange={(e) => setProfile({ ...profile, date_of_birth: e.target.value })}
-                      className="border rounded-md px-3 py-2 text-sm"
+                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       disabled={busy}
                     />
                   </label>
-                  <label className="grid gap-1">
-                    <span className="text-xs text-gray-600">Gender</span>
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-600">Gender</span>
                     <select
                       value={profile.gender || ""}
                       onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
-                      className="border rounded-md px-3 py-2 text-sm"
+                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       disabled={busy}
                     >
                       <option value="">Select</option>
@@ -338,13 +342,13 @@ export default function AdminLeadDetailPage() {
                       <option value="other">Other</option>
                     </select>
                   </label>
-                  <label className="grid gap-1">
-                    <span className="text-xs text-gray-600">Father's Name</span>
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-600">Father's Name</span>
                     <input
                       type="text"
                       value={profile.father_name || ""}
                       onChange={(e) => setProfile({ ...profile, father_name: e.target.value })}
-                      className="border rounded-md px-3 py-2 text-sm"
+                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Father's full name"
                       disabled={busy}
                     />
@@ -352,30 +356,30 @@ export default function AdminLeadDetailPage() {
                 </div>
               </div>
 
-              {/* ID Numbers */}
+              {/* Identity Documents */}
               <div>
-                <div className="text-sm font-medium text-gray-700 mb-3">Identity Documents</div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="grid gap-1">
-                    <span className="text-xs text-gray-600">PAN Number</span>
+                <h3 className="text-sm font-medium text-slate-700 mb-3">Identity Documents</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-600">PAN Number</span>
                     <input
                       type="text"
                       value={profile.pan_number || ""}
                       onChange={(e) => setProfile({ ...profile, pan_number: e.target.value.toUpperCase() })}
-                      className="border rounded-md px-3 py-2 text-sm uppercase"
+                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="ABCDE1234F"
                       maxLength={10}
                       disabled={busy}
                     />
                   </label>
-                  <label className="grid gap-1">
-                    <span className="text-xs text-gray-600">Aadhaar Number</span>
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-600">Aadhaar Number</span>
                     <input
                       type="text"
                       value={profile.aadhaar_number || ""}
                       onChange={(e) => setProfile({ ...profile, aadhaar_number: e.target.value.replace(/\D/g, "") })}
-                      className="border rounded-md px-3 py-2 text-sm"
-                      placeholder="1234 5678 9012"
+                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="123456789012"
                       maxLength={12}
                       disabled={busy}
                     />
@@ -385,48 +389,48 @@ export default function AdminLeadDetailPage() {
 
               {/* Address */}
               <div>
-                <div className="text-sm font-medium text-gray-700 mb-3">Address</div>
-                <div className="grid gap-3">
-                  <label className="grid gap-1">
-                    <span className="text-xs text-gray-600">Address Line 1</span>
+                <h3 className="text-sm font-medium text-slate-700 mb-3">Address</h3>
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-600">Address Line 1</span>
                     <input
                       type="text"
                       value={profile.address_line1 || ""}
                       onChange={(e) => setProfile({ ...profile, address_line1: e.target.value })}
-                      className="border rounded-md px-3 py-2 text-sm"
+                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="House/Flat No., Building Name, Street"
                       disabled={busy}
                     />
                   </label>
-                  <label className="grid gap-1">
-                    <span className="text-xs text-gray-600">Address Line 2</span>
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-600">Address Line 2</span>
                     <input
                       type="text"
                       value={profile.address_line2 || ""}
                       onChange={(e) => setProfile({ ...profile, address_line2: e.target.value })}
-                      className="border rounded-md px-3 py-2 text-sm"
+                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Landmark, Area (optional)"
                       disabled={busy}
                     />
                   </label>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <label className="grid gap-1">
-                      <span className="text-xs text-gray-600">City</span>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <label className="block">
+                      <span className="text-xs font-medium text-slate-600">City</span>
                       <input
                         type="text"
                         value={profile.city || ""}
                         onChange={(e) => setProfile({ ...profile, city: e.target.value })}
-                        className="border rounded-md px-3 py-2 text-sm"
+                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="City"
                         disabled={busy}
                       />
                     </label>
-                    <label className="grid gap-1">
-                      <span className="text-xs text-gray-600">State</span>
+                    <label className="block">
+                      <span className="text-xs font-medium text-slate-600">State</span>
                       <select
                         value={profile.state || ""}
                         onChange={(e) => setProfile({ ...profile, state: e.target.value })}
-                        className="border rounded-md px-3 py-2 text-sm"
+                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         disabled={busy}
                       >
                         <option value="">Select State</option>
@@ -435,13 +439,13 @@ export default function AdminLeadDetailPage() {
                         ))}
                       </select>
                     </label>
-                    <label className="grid gap-1">
-                      <span className="text-xs text-gray-600">Pincode</span>
+                    <label className="block">
+                      <span className="text-xs font-medium text-slate-600">Pincode</span>
                       <input
                         type="text"
                         value={profile.pincode || ""}
                         onChange={(e) => setProfile({ ...profile, pincode: e.target.value.replace(/\D/g, "") })}
-                        className="border rounded-md px-3 py-2 text-sm"
+                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="6-digit PIN"
                         maxLength={6}
                         disabled={busy}
@@ -453,62 +457,62 @@ export default function AdminLeadDetailPage() {
 
               {/* Bank Details */}
               <div>
-                <div className="text-sm font-medium text-gray-700 mb-3">Bank Details</div>
-                <div className="grid gap-3">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="grid gap-1">
-                      <span className="text-xs text-gray-600">Bank Name</span>
+                <h3 className="text-sm font-medium text-slate-700 mb-3">Bank Details</h3>
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="text-xs font-medium text-slate-600">Bank Name</span>
                       <input
                         type="text"
                         value={profile.bank_name || ""}
                         onChange={(e) => setProfile({ ...profile, bank_name: e.target.value })}
-                        className="border rounded-md px-3 py-2 text-sm"
+                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="e.g., State Bank of India"
                         disabled={busy}
                       />
                     </label>
-                    <label className="grid gap-1">
-                      <span className="text-xs text-gray-600">Branch Name</span>
+                    <label className="block">
+                      <span className="text-xs font-medium text-slate-600">Branch Name</span>
                       <input
                         type="text"
                         value={profile.branch_name || ""}
                         onChange={(e) => setProfile({ ...profile, branch_name: e.target.value })}
-                        className="border rounded-md px-3 py-2 text-sm"
+                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Branch name"
                         disabled={busy}
                       />
                     </label>
                   </div>
-                  <label className="grid gap-1">
-                    <span className="text-xs text-gray-600">Account Holder Name</span>
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-600">Account Holder Name</span>
                     <input
                       type="text"
                       value={profile.account_holder_name || ""}
                       onChange={(e) => setProfile({ ...profile, account_holder_name: e.target.value })}
-                      className="border rounded-md px-3 py-2 text-sm"
+                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Name as per bank records"
                       disabled={busy}
                     />
                   </label>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="grid gap-1">
-                      <span className="text-xs text-gray-600">Account Number</span>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="text-xs font-medium text-slate-600">Account Number</span>
                       <input
                         type="text"
                         value={profile.account_number || ""}
                         onChange={(e) => setProfile({ ...profile, account_number: e.target.value.replace(/\D/g, "") })}
-                        className="border rounded-md px-3 py-2 text-sm"
+                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Account number"
                         disabled={busy}
                       />
                     </label>
-                    <label className="grid gap-1">
-                      <span className="text-xs text-gray-600">IFSC Code</span>
+                    <label className="block">
+                      <span className="text-xs font-medium text-slate-600">IFSC Code</span>
                       <input
                         type="text"
                         value={profile.ifsc_code || ""}
                         onChange={(e) => setProfile({ ...profile, ifsc_code: e.target.value.toUpperCase() })}
-                        className="border rounded-md px-3 py-2 text-sm uppercase"
+                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="e.g., SBIN0001234"
                         maxLength={11}
                         disabled={busy}
@@ -519,11 +523,11 @@ export default function AdminLeadDetailPage() {
               </div>
 
               {/* Save Button */}
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-2">
                 <button
                   onClick={saveProfileAndStatus}
                   disabled={busy}
-                  className="rounded-md bg-black text-white px-6 py-2 text-sm disabled:opacity-50"
+                  className="rounded-lg bg-blue-600 text-white px-6 py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
                 >
                   {busy ? "Saving…" : "Save Partner Details"}
                 </button>
@@ -531,28 +535,28 @@ export default function AdminLeadDetailPage() {
             </div>
           </div>
 
-
           {/* Documents */}
-          <div className="mt-6 rounded-lg border p-4">
-            <div className="font-medium">Documents</div>
-            <div className="text-xs text-gray-600 mt-1">
-              Admin uploads documents collected from the partner. No per-document status is tracked.
-            </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-6">
+            <h2 className="text-lg font-semibold text-slate-900">Documents</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Upload documents collected from the partner.
+            </p>
 
-            <div className="mt-4 grid gap-3">
+            <div className="mt-6 grid gap-3">
               {DOC_TYPES.map((d) => (
                 <div
                   key={d.key}
-                  className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border rounded-md p-3"
+                  className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border border-slate-200 rounded-lg p-4 bg-slate-50"
                 >
                   <div>
-                    <div className="text-sm">{d.label}</div>
-                    <div className="text-xs text-gray-600">Uploaded: {docsByType[d.key] || 0}</div>
+                    <div className="text-sm font-medium text-slate-900">{d.label}</div>
+                    <div className="text-xs text-slate-500">Uploaded: {docsByType[d.key] || 0}</div>
                   </div>
 
                   <input
                     type="file"
                     disabled={busy}
+                    className="text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (f) uploadDoc(d.key, f);
@@ -562,24 +566,25 @@ export default function AdminLeadDetailPage() {
               ))}
             </div>
 
-            <div className="mt-6">
-              <div className="text-sm font-medium">Uploaded files</div>
+            {/* Uploaded files list */}
+            <div className="mt-8">
+              <h3 className="text-sm font-medium text-slate-900">Uploaded Files</h3>
               {data.documents.length === 0 ? (
-                <div className="mt-2 text-sm text-gray-600">No documents uploaded yet.</div>
+                <p className="mt-2 text-sm text-slate-500">No documents uploaded yet.</p>
               ) : (
-                <div className="mt-3 rounded-md border overflow-hidden">
-                  <div className="grid grid-cols-12 gap-2 bg-gray-50 px-3 py-2 text-xs font-medium">
+                <div className="mt-3 rounded-lg border border-slate-200 overflow-hidden">
+                  <div className="grid grid-cols-12 gap-2 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wide">
                     <div className="col-span-3">Type</div>
-                    <div className="col-span-7">File</div>
-                    <div className="col-span-2">Uploaded</div>
+                    <div className="col-span-6">File</div>
+                    <div className="col-span-3">Uploaded</div>
                   </div>
-                  <div className="divide-y">
+                  <div className="divide-y divide-slate-200">
                     {data.documents.map((doc) => (
-                      <div key={doc.doc_id} className="grid grid-cols-12 gap-2 px-3 py-2 text-xs">
-                        <div className="col-span-3">{doc.doc_type}</div>
-                        <div className="col-span-7 break-all">{doc.original_filename}</div>
-                        <div className="col-span-2 text-gray-600">
-                          {new Date(doc.uploaded_at).toLocaleString()}
+                      <div key={doc.doc_id} className="grid grid-cols-12 gap-2 px-4 py-3 text-sm">
+                        <div className="col-span-3 text-slate-700">{doc.doc_type}</div>
+                        <div className="col-span-6 text-slate-900 break-all">{doc.original_filename}</div>
+                        <div className="col-span-3 text-slate-500 text-xs">
+                          {new Date(doc.uploaded_at).toLocaleDateString()}
                         </div>
                       </div>
                     ))}
