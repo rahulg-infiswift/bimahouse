@@ -16,8 +16,7 @@ def utcnow():
 
 
 class LeadStatus:
-    INVITED = "invited"          # created by admin, waiting for partner to sign in/claim
-    IN_PROGRESS = "in_progress"  # claimed + filling KYC
+    IN_PROGRESS = "in_progress"  # created + filling KYC
     SUBMITTED = "submitted"      # ready for review
     IN_REVIEW = "in_review"
     APPROVED = "approved"

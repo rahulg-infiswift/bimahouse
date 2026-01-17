@@ -82,7 +82,6 @@ class LeadCreateOut(BaseModel):
 
 
 class LeadSummaryOut(BaseModel):
-    invited: int = 0
     in_progress: int = 0
     submitted: int = 0
     in_review: int = 0

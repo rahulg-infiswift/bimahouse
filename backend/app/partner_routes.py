@@ -174,7 +174,6 @@ def admin_leads_summary(
     )
 
     return LeadSummaryOut(
-        invited=int(counts.get(LeadStatus.INVITED, 0)),
         in_progress=int(counts.get(LeadStatus.IN_PROGRESS, 0)),
         submitted=int(counts.get(LeadStatus.SUBMITTED, 0)),
         in_review=int(counts.get(LeadStatus.IN_REVIEW, 0)),
@@ -226,7 +225,7 @@ def admin_create_lead(
         full_name=payload.full_name.strip(),
         lead_email=str(payload.email).strip().lower(),
         phone=(payload.phone.strip() if payload.phone else None),
-        status=LeadStatus.INVITED,
+        status=LeadStatus.IN_PROGRESS,  # Start as IN_PROGRESS (INVITED is deprecated)
         created_at=utcnow(),
         updated_at=utcnow(),
         profile=None,
@@ -348,10 +347,6 @@ def admin_verify_otp(
     lead.otp_last_sent_at = None
     lead.otp_attempts = 0
 
-    # Optionally bump status to in_progress once verified
-    if lead.status == LeadStatus.INVITED:
-        lead.status = LeadStatus.IN_PROGRESS
-
     lead.updated_at = utcnow()
     db.commit()
 
@@ -375,7 +370,6 @@ def admin_update_lead(
     
     if payload.status is not None:
         allowed = {
-            LeadStatus.INVITED,
             LeadStatus.IN_PROGRESS,
             LeadStatus.SUBMITTED,
             LeadStatus.IN_REVIEW,
