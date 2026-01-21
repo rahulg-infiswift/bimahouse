@@ -4,9 +4,9 @@ from datetime import datetime, timezone, date
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import Column, String, DateTime, Text, Boolean, ForeignKey, Integer, Date, Sequence
+from sqlalchemy import String, DateTime, Text, Boolean, ForeignKey, Integer, Date, Sequence
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
 
@@ -31,44 +31,60 @@ partner_number_seq = Sequence('partner_number_seq', start=1)  # BHP-0001, BHP-00
 class PartnerLead(Base):
     __tablename__ = "partner_leads"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
     # Human-readable sequential Lead ID (BHL-0001, BHL-0002, etc.)
-    lead_number = Column(Integer, lead_number_seq, server_default=lead_number_seq.next_value(), unique=True, nullable=False, index=True)
+    lead_number: Mapped[int] = mapped_column(
+        Integer,
+        lead_number_seq,
+        server_default=lead_number_seq.next_value(),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
     
     # Human-readable sequential Partner ID (BHP-0001, BHP-0002, etc.)
     # Assigned when lead is approved - separate counter from lead_number
-    partner_number = Column(Integer, nullable=True, unique=True, index=True)
+    partner_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, unique=True, index=True)
     
     # Clerk user ID - set when partner logs in via Clerk (links policies to partner)
-    clerk_user_id = Column(String, nullable=True, unique=True, index=True)
+    clerk_user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, unique=True, index=True)
 
     # Entered by admin
-    full_name = Column(String, nullable=False)
-    lead_email = Column(String, nullable=False, index=True)
-    phone = Column(String, nullable=False)
+    full_name: Mapped[str] = mapped_column(String, nullable=False)
+    lead_email: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    phone: Mapped[str] = mapped_column(String, nullable=False)
 
-    status = Column(String, nullable=False, default=LeadStatus.IN_PROGRESS, index=True)
+    status: Mapped[str] = mapped_column(String, nullable=False, default=LeadStatus.IN_PROGRESS, index=True)
 
     # Email OTP verification fields (admin-driven)
-    email_verified_at = Column(DateTime(timezone=True), nullable=True)
-    otp_hash = Column(String, nullable=True)
-    otp_expires_at = Column(DateTime(timezone=True), nullable=True)
-    otp_last_sent_at = Column(DateTime(timezone=True), nullable=True)
-    otp_attempts = Column(Integer, nullable=False, default=0)
+    email_verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    otp_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    otp_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    otp_last_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    otp_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     
     # Flexible KYC/form data (kept for backward compatibility, but prefer PartnerProfile)
-    profile = Column(JSONB, nullable=True)
+    profile: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
 
-    internal_notes = Column(Text, nullable=True)
-    rejection_reason = Column(Text, nullable=True)
+    internal_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
 
     # Relationships
-    documents = relationship("PartnerLeadDocument", back_populates="lead", cascade="all, delete-orphan")
-    profile_data = relationship("PartnerProfile", back_populates="lead", uselist=False, cascade="all, delete-orphan")
+    documents: Mapped[list["PartnerLeadDocument"]] = relationship(
+        "PartnerLeadDocument",
+        back_populates="lead",
+        cascade="all, delete-orphan",
+    )
+    profile_data: Mapped[Optional["PartnerProfile"]] = relationship(
+        "PartnerProfile",
+        back_populates="lead",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
     @property
     def display_id(self) -> str:
@@ -104,36 +120,42 @@ class PartnerProfile(Base):
     """Structured partner profile data - personal details, address, bank info"""
     __tablename__ = "partner_profiles"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    lead_id = Column(UUID(as_uuid=True), ForeignKey("partner_leads.id"), nullable=False, unique=True, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lead_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("partner_leads.id"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
 
     # Personal Details
-    date_of_birth = Column(Date, nullable=True)
-    gender = Column(String(20), nullable=True)  # male, female, other
-    father_name = Column(String(255), nullable=True)
+    date_of_birth: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    gender: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # male, female, other
+    father_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     # Identity Documents
-    pan_number = Column(String(10), nullable=True, index=True)
-    aadhaar_number = Column(String(12), nullable=True)  # Store without spaces
+    pan_number: Mapped[Optional[str]] = mapped_column(String(10), nullable=True, index=True)
+    aadhaar_number: Mapped[Optional[str]] = mapped_column(String(12), nullable=True)  # Store without spaces
 
     # Address
-    address_line1 = Column(String(500), nullable=True)
-    address_line2 = Column(String(500), nullable=True)
-    city = Column(String(100), nullable=True)
-    state = Column(String(100), nullable=True)
-    pincode = Column(String(6), nullable=True)
+    address_line1: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    address_line2: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    city: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    state: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    pincode: Mapped[Optional[str]] = mapped_column(String(6), nullable=True)
 
     # Bank Details
-    bank_name = Column(String(255), nullable=True)
-    branch_name = Column(String(255), nullable=True)
-    account_holder_name = Column(String(255), nullable=True)
-    account_number = Column(String(20), nullable=True)
-    ifsc_code = Column(String(11), nullable=True)
+    bank_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    branch_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    account_holder_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    account_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    ifsc_code: Mapped[Optional[str]] = mapped_column(String(11), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
 
-    lead = relationship("PartnerLead", back_populates="profile_data")
+    lead: Mapped["PartnerLead"] = relationship("PartnerLead", back_populates="profile_data")
 
 
 class DocType:
@@ -154,18 +176,28 @@ class VerificationStatus:
 class PartnerLeadDocument(Base):
     __tablename__ = "partner_lead_documents"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    lead_id = Column(UUID(as_uuid=True), ForeignKey("partner_leads.id"), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lead_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("partner_leads.id"),
+        nullable=False,
+        index=True,
+    )
 
-    doc_type = Column(String, nullable=False, index=True)
-    storage_key = Column(String, nullable=False)  # local path or S3 key later
-    original_filename = Column(String, nullable=False)
-    content_type = Column(String, nullable=True)
-    size_bytes = Column(Integer, nullable=True)
+    doc_type: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    storage_key: Mapped[str] = mapped_column(String, nullable=False)  # local path or S3 key later
+    original_filename: Mapped[str] = mapped_column(String, nullable=False)
+    content_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    size_bytes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
-    verification_status = Column(String, nullable=False, default=VerificationStatus.VERIFIED, index=True)
-    verification_notes = Column(Text, nullable=True)
+    verification_status: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        default=VerificationStatus.VERIFIED,
+        index=True,
+    )
+    verification_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    uploaded_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
 
-    lead = relationship("PartnerLead", back_populates="documents")
+    lead: Mapped["PartnerLead"] = relationship("PartnerLead", back_populates="documents")

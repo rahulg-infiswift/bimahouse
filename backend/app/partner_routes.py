@@ -10,7 +10,7 @@ from sqlalchemy import func, text, or_ as sqlalchemy_or
 
 from .config import settings
 from .db import get_db
-from .auth import get_current_user_id
+from .auth import get_current_user
 from .partner_models import PartnerLead, PartnerLeadDocument, PartnerProfile, LeadStatus, DocType
 from .partner_schemas import (
     LeadCreateIn, LeadCreateOut, LeadSummaryOut, LeadListItem, LeadDetailOut,
@@ -162,7 +162,7 @@ def _lead_to_detail(db: Session, lead: PartnerLead) -> LeadDetailOut:
 
 @router.get("/v1/admin/leads/summary", response_model=LeadSummaryOut)
 def admin_leads_summary(
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     require_admin(user_id)
@@ -185,7 +185,7 @@ def admin_leads_summary(
 @router.get("/v1/admin/leads", response_model=list[LeadListItem])
 def admin_list_leads(
     status: Optional[str] = Query(default=None),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     require_admin(user_id)
@@ -216,7 +216,7 @@ def admin_list_leads(
 @router.post("/v1/admin/leads", response_model=LeadCreateOut)
 def admin_create_lead(
     payload: LeadCreateIn,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     require_admin(user_id)
@@ -265,7 +265,7 @@ def admin_create_lead(
 @router.get("/v1/admin/leads/{lead_id}", response_model=LeadDetailOut)
 def admin_get_lead(
     lead_id: str,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     require_admin(user_id)
@@ -280,7 +280,7 @@ def admin_get_lead(
 @router.post("/v1/admin/leads/{lead_id}/send-otp", response_model=OtpSendOut)
 def admin_send_otp(
     lead_id: str,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     require_admin(user_id)
@@ -324,7 +324,7 @@ def admin_send_otp(
 def admin_verify_otp(
     lead_id: str,
     payload: OtpVerifyIn,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     require_admin(user_id)
@@ -370,7 +370,7 @@ def admin_verify_otp(
 def admin_update_lead(
     lead_id: str,
     payload: AdminLeadUpdateIn,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     require_admin(user_id)
@@ -427,7 +427,7 @@ async def admin_upload_doc(
     lead_id: str,
     doc_type: str = Query(..., description="aadhaar|pan|marksheet_10|cancelled_cheque|photo|other"),
     file: UploadFile = File(...),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     require_admin(user_id)

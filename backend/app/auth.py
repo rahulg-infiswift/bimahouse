@@ -1,9 +1,16 @@
 from typing import Optional
+import logging
 import requests
 from jose import jwk, jwt
 from jose.utils import base64url_decode
-from fastapi import Header, HTTPException
+from fastapi import Header, HTTPException, Depends
+from sqlalchemy.orm import Session
 from .config import settings
+from .db import get_db
+from .models import User
+from .clerk_client import get_primary_email_and_verified
+
+logger = logging.getLogger(__name__)
 
 _jwks_cache = {"keys": None}
 
@@ -63,3 +70,34 @@ async def get_current_user_id(
 
     token = authorization.split(" ", 1)[1].strip()
     return _verify_clerk_jwt(token)
+
+def _ensure_user_record(user_id: str, db: Session) -> None:
+    user = db.query(User).filter(User.id == user_id).first()
+    if user and user.primary_email:
+        return
+
+    email = None
+    verified = False
+    if settings.clerk_secret_key:
+        try:
+            email, verified = get_primary_email_and_verified(user_id)
+        except HTTPException as exc:
+            logger.warning("Clerk lookup failed for user %s: %s", user_id, exc.detail)
+
+    if user:
+        if email:
+            user.primary_email = email
+            user.email_verified = verified
+            db.commit()
+        return
+
+    user = User(id=user_id, primary_email=email, email_verified=verified)
+    db.add(user)
+    db.commit()
+
+async def get_current_user(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> str:
+    _ensure_user_record(user_id, db)
+    return user_id

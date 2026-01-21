@@ -15,7 +15,7 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))  # noqa
 
-from app.auth import get_current_user_id
+from app.auth import get_current_user
 from app.config import settings
 from app.db import get_db, engine
 from app.models import Job, Policy, JobStatus, Base
@@ -85,7 +85,7 @@ def health():
 @app.post("/v1/policies/extract")
 async def extract_policy(
     file: UploadFile = File(...),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if not file.filename.lower().endswith(".pdf"):
@@ -123,7 +123,7 @@ async def extract_policy(
     return {"job_id": str(job.id), "policy_id": str(policy.id)}
 
 @app.get("/v1/jobs/{job_id}")
-def get_job(job_id: str, user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+def get_job(job_id: uuid.UUID, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     job = db.query(Job).filter(Job.id == job_id, Job.user_id == user_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -141,7 +141,7 @@ def get_job(job_id: str, user_id: str = Depends(get_current_user_id), db: Sessio
 def list_policies(
     start_date: Optional[date] = Query(default=None, description="Filter policies created on or after this date (YYYY-MM-DD)"),
     end_date: Optional[date] = Query(default=None, description="Filter policies created on or before this date (YYYY-MM-DD)"),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     q = db.query(Policy).filter(Policy.user_id == user_id)
@@ -174,7 +174,7 @@ def list_policies(
 def download_policies_bulk(
     start_date: Optional[date] = Query(default=None, description="Filter policies created on or after this date (YYYY-MM-DD)"),
     end_date: Optional[date] = Query(default=None, description="Filter policies created on or before this date (YYYY-MM-DD)"),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Download all policies with extracted data as a single Excel file (one row per policy)."""
@@ -248,7 +248,7 @@ def download_policies_bulk(
 
 
 @app.get("/v1/policies/{policy_id}")
-def get_policy(policy_id: str, user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+def get_policy(policy_id: uuid.UUID, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     policy = db.query(Policy).filter(Policy.id == policy_id, Policy.user_id == user_id).first()
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
@@ -263,9 +263,9 @@ def get_policy(policy_id: str, user_id: str = Depends(get_current_user_id), db: 
 
 @app.get("/v1/policies/{policy_id}/download")
 def download_policy(
-    policy_id: str,
+    policy_id: uuid.UUID,
     format: str = Query(default="json", pattern="^(json|csv|xlsx)$"),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     policy = db.query(Policy).filter(Policy.id == policy_id, Policy.user_id == user_id).first()
