@@ -51,6 +51,7 @@ export default function AdminLeadsPage() {
   const [phone, setPhone] = useState("");
   const [modalErr, setModalErr] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [panNumber, setPanNumber] = useState("");
 
   const [otpByLead, setOtpByLead] = useState<Record<string, string>>({});
   const [busyLead, setBusyLead] = useState<string | null>(null);
@@ -106,7 +107,8 @@ export default function AdminLeadsPage() {
     const trimmedName = fullName.trim();
     const trimmedEmail = email.trim();
     const trimmedPhone = phone.trim();
-    
+    const trimmedPan = panNumber.trim().toUpperCase();
+
     if (!trimmedName) {
       setModalErr("Full name is required");
       return;
@@ -121,6 +123,16 @@ export default function AdminLeadsPage() {
     }
     if (!trimmedPhone) {
       setModalErr("Phone number is required");
+      return;
+    }
+    // Accept only 10 digit Indian mobile numbers (with or without country code)
+    const phoneDigits = trimmedPhone.replace(/\D/g, "");
+    if (!(phoneDigits.length === 10 && /^\d{10}$/.test(phoneDigits))) {
+      setModalErr("Please enter a valid 10-digit phone number");
+      return;
+    }
+    if (trimmedPan && !/^([A-Z]{5}[0-9]{4}[A-Z])$/.test(trimmedPan)) {
+      setModalErr("Please enter a valid PAN number (e.g. ABCDE1234F)");
       return;
     }
     
@@ -138,16 +150,37 @@ export default function AdminLeadsPage() {
           full_name: trimmedName,
           email: trimmedEmail,
           phone: trimmedPhone,
+          pan_number: trimmedPan || undefined,
         }),
       });
 
-      if (!resp.ok) throw new Error(`Create failed: ${resp.status} ${await resp.text()}`);
-      setShowModal(false);
-      setFullName("");
-      setEmail("");
-      setPhone("");
-      setModalErr(null);
-      await load();
+      if (!resp.ok) {
+        let msg = "";
+        if (resp.status === 422) {
+          msg = "Please check your inputs. Phone number must be 10 digits.";
+        } else {
+          msg = `Create failed: ${resp.status}`;
+          try {
+            const data = await resp.json();
+            if (data && data.detail && typeof data.detail === "string") {
+              if (data.detail.includes("already exists")) {
+                msg = "A lead with this email, phone, or PAN already exists.";
+              } else {
+                msg = data.detail;
+              }
+            }
+          } catch {}
+        }
+        setModalErr(msg);
+        return;
+      }
+  setShowModal(false);
+  setFullName("");
+  setEmail("");
+  setPhone("");
+  setPanNumber("");
+  setModalErr(null);
+  await load();
     } catch (e: any) {
       setModalErr(e?.message || "Create failed");
     } finally {
@@ -459,6 +492,20 @@ export default function AdminLeadsPage() {
                     placeholder="+91 98765 43210"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    PAN Number <span className="text-slate-400">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full uppercase rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    placeholder="ABCDE1234F"
+                    value={panNumber}
+                    onChange={(e) => setPanNumber(e.target.value)}
+                    maxLength={10}
                   />
                 </div>
 

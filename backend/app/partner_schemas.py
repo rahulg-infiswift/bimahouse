@@ -70,6 +70,7 @@ class LeadCreateIn(BaseModel):
     full_name: str = Field(..., min_length=2)
     email: EmailStr
     phone: INPhoneNumber
+    pan_number: Optional[str] = Field(None, min_length=10, max_length=10, pattern=r"^[A-Z]{5}[0-9]{4}[A-Z]$")
 
 
 class LeadCreateOut(BaseModel):

@@ -6,7 +6,7 @@ import hashlib
 
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, text
+from sqlalchemy import func, text, or_ as sqlalchemy_or
 
 from .config import settings
 from .db import get_db
@@ -221,6 +221,19 @@ def admin_create_lead(
 ):
     require_admin(user_id)
 
+    # Check for duplicate email, phone, or PAN (if provided)
+    filters = [
+        PartnerLead.lead_email == str(payload.email).strip().lower(),
+        PartnerLead.phone == payload.phone.strip()
+    ]
+    if payload.pan_number:
+        filters.append(PartnerLead.profile["pan_number"].astext == payload.pan_number.strip().upper())
+    existing = db.query(PartnerLead).filter(
+        sqlalchemy_or(*filters)
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="A lead with this email, phone, or PAN already exists.")
+
     lead = PartnerLead(
         full_name=payload.full_name.strip(),
         lead_email=str(payload.email).strip().lower(),
@@ -228,7 +241,7 @@ def admin_create_lead(
         status=LeadStatus.IN_PROGRESS,  # Start as IN_PROGRESS
         created_at=utcnow(),
         updated_at=utcnow(),
-        profile=None,
+        profile={"pan_number": payload.pan_number.strip().upper()} if payload.pan_number else None,
         email_verified_at=None,
         otp_hash=None,
         otp_expires_at=None,
