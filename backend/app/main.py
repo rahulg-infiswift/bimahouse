@@ -1,5 +1,4 @@
 # backend/app/api/main.py
-from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 import logging
@@ -10,14 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))  # noqa
 
-from app.core.config import settings
-from app.core.db import engine, Base
 from app.partners.routes import router as partner_router
 from app.policies.routes import router as policy_router
 
-from app.partners import models as partner_models  # noqa: F401
-from app.policies import models as policy_models  # noqa: F401
-from app.users import models as user_models  # noqa: F401
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -32,14 +26,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    if settings.env == "dev":
-        Base.metadata.create_all(bind=engine)
-    yield
-
-
-app = FastAPI(title="Policy Extractor API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Policy Extractor API", version="1.0.0")
 
 # CORS (tighten in prod)
 app.add_middleware(
