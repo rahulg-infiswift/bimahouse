@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -r /src/requirements.txt
 COPY app /src/app
 
 ENV PYTHONUNBUFFERED=1
-CMD ["python", "-m", "app.worker"]
+CMD ["python", "-m", "app.policies.worker"]

@@ -1,4 +1,4 @@
-# backend/app/partner_models.py
+# backend/app/partners/models.py
 import uuid
 from datetime import datetime, timezone, date
 from decimal import Decimal
@@ -8,7 +8,7 @@ from sqlalchemy import String, DateTime, Text, Boolean, ForeignKey, Integer, Dat
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .db import Base
+from app.core.db import Base
 
 
 def utcnow():

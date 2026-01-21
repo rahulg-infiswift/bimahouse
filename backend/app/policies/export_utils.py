@@ -1,9 +1,9 @@
-# backend/app/export_utils.py
+# backend/app/policies/export_utils.py
 from __future__ import annotations
 
 import csv
 import io
-import os
+from pathlib import Path
 from decimal import Decimal
 from typing import Any, Dict, Iterable, List, Tuple, Optional
 
@@ -31,8 +31,8 @@ def _load_commission_config() -> Dict[str, Dict[str, Any]]:
     _commission_config = {}
     
     # Try to load from file
-    csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "grid_points.csv")
-    if os.path.exists(csv_path):
+    csv_path = Path(__file__).resolve().parents[2] / "grid_points.csv"
+    if csv_path.exists():
         with open(csv_path, "r") as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -339,4 +339,3 @@ def policies_to_xlsx_bytes(policies: List[Any], partners_map: Optional[Dict[str,
     out = io.BytesIO()
     wb.save(out)
     return out.getvalue()
-

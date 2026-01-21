@@ -1,4 +1,4 @@
-# backend/app/openai_extract.py
+# backend/app/policies/openai_extract.py
 import argparse
 import json
 from pathlib import Path
@@ -6,9 +6,9 @@ from typing import Any, Dict, Optional
 
 from openai import OpenAI
 import sys
-sys.path.append(str(Path(__file__).resolve().parents[1]))  # noqa
-from app.config import settings
-from app.policy_models import PolicyExtractV1
+sys.path.append(str(Path(__file__).resolve().parents[2]))  # noqa
+from app.core.config import settings
+from app.policies.schemas import PolicyExtractV1
 
 
 def extract_policy_json_from_pdf(pdf_path: str, *, cleanup_file: bool = True) -> Dict[str, Any]:
@@ -98,4 +98,3 @@ if __name__ == "__main__":
     
     out_path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\nSaved: {out_path}")
-

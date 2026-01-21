@@ -1,9 +1,9 @@
-# backend/app/clerk_client.py
+# backend/app/core/clerk_client.py
 from typing import Optional, Tuple
 import requests
 from fastapi import HTTPException
 
-from .config import settings
+from app.core.config import settings
 
 CLERK_API_BASE = "https://api.clerk.com/v1"
 

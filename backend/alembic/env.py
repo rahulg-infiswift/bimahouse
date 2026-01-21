@@ -9,13 +9,13 @@ from alembic import context
 # Add parent directory to path so we can import app modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.db import Base
-from app.config import settings
+from app.core.db import Base
+from app.core.config import settings
 
 # Import all models so they are registered with Base.metadata
-from app import models  # noqa: F401
-from app import partner_models  # noqa: F401
-from app import policy_models  # noqa: F401
+from app.policies import models as policy_models  # noqa: F401
+from app.partners import models as partner_models  # noqa: F401
+from app.users import models as user_models  # noqa: F401
 
 # this is the Alembic Config object
 config = context.config

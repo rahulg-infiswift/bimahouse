@@ -1,4 +1,4 @@
-# backend/app/partner_schemas.py
+# backend/app/partners/schemas.py
 from typing import Any, Dict, List, Optional
 from datetime import date
 from pydantic import BaseModel, Field, EmailStr

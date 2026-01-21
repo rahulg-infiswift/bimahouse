@@ -1,4 +1,4 @@
-# backend/app/worker.py
+# backend/app/policies/worker.py
 import json
 import logging
 import time
@@ -8,10 +8,10 @@ from typing import Any, Dict, Optional
 from rq import Worker, Queue, Connection
 from redis import Redis
 
-from .config import settings
-from .db import SessionLocal
-from .models import Job, Policy, JobStatus
-from .openai_extract import extract_policy_json_from_pdf
+from app.core.config import settings
+from app.core.db import SessionLocal
+from app.policies.models import Job, Policy, JobStatus
+from app.policies.openai_extract import extract_policy_json_from_pdf
 
 logger = logging.getLogger("worker")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")

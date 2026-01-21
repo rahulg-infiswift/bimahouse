@@ -5,10 +5,10 @@ from jose import jwk, jwt
 from jose.utils import base64url_decode
 from fastapi import Header, HTTPException, Depends
 from sqlalchemy.orm import Session
-from .config import settings
-from .db import get_db
-from .models import User
-from .clerk_client import get_primary_email_and_verified
+from app.core.config import settings
+from app.core.db import get_db
+from app.users.models import User
+from app.core.clerk_client import get_primary_email_and_verified
 
 logger = logging.getLogger(__name__)
 

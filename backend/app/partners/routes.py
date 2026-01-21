@@ -1,4 +1,4 @@
-# backend/app/partner_routes.py
+# backend/app/partners/routes.py
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 import secrets
@@ -8,19 +8,19 @@ from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text, or_ as sqlalchemy_or
 
-from .config import settings
-from .db import get_db
-from .auth import get_current_user
-from .partner_models import PartnerLead, PartnerLeadDocument, PartnerProfile, LeadStatus, DocType
-from .partner_schemas import (
+from app.core.config import settings
+from app.core.db import get_db
+from app.core.auth import get_current_user
+from app.partners.models import PartnerLead, PartnerLeadDocument, PartnerProfile, LeadStatus, DocType
+from app.partners.schemas import (
     LeadCreateIn, LeadCreateOut, LeadSummaryOut, LeadListItem, LeadDetailOut,
     KycUpdateIn, OtpSendOut, OtpVerifyIn, OtpVerifyOut, AdminLeadUpdateIn,
     PartnerProfileOut, PartnerProfileIn
 )
-from .storage import save_partner_doc_bytes
-from .email_utils import send_email  # NEW helper file below
+from app.partners.storage import save_partner_doc_bytes
+from app.partners.email_utils import send_email  # NEW helper file below
 
-router = APIRouter()
+router = APIRouter(tags=["Partners"])
 
 
 def require_admin(user_id: str):

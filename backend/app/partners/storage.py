@@ -1,22 +1,10 @@
-from datetime import datetime
-import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Tuple
 import uuid
-from .config import settings
 
-def ensure_storage_dir() -> str:
-    os.makedirs(settings.storage_dir, exist_ok=True)
-    return settings.storage_dir
+from app.core.config import settings
 
-def save_pdf_bytes(filename: str, content: bytes) -> str:
-    ensure_storage_dir()
-    safe_name = filename.replace("/", "_").replace("\\", "_")
-    key = f"{uuid.uuid4()}__{safe_name}"
-    path = os.path.join(settings.storage_dir, key)
-    with open(path, "wb") as f:
-        f.write(content)
-    return path
 
 def save_partner_doc_bytes(lead_id: str, doc_type: str, filename: str, content: bytes) -> Tuple[str, str]:
     """
@@ -29,7 +17,7 @@ def save_partner_doc_bytes(lead_id: str, doc_type: str, filename: str, content: 
     out_dir.mkdir(parents=True, exist_ok=True)
 
     safe_name = Path(filename).name
-    ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     stored = f"{doc_type}_{ts}_{uuid.uuid4().hex}_{safe_name}"
 
     out_path = out_dir / stored

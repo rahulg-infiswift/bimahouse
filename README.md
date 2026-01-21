@@ -116,7 +116,7 @@ export ALLOW_DEV_USER_HEADER="true"
 Run backend:
 
 ```bash
-python app/main.py
+uvicorn app.main:app --reload
 ```
 
 Backend:
@@ -131,7 +131,7 @@ cd backend
 source .venv/bin/activate
 
 # ensure the same env vars are available here too
-python -m app.worker
+python -m app.policies.worker
 ```
 
 ## 4) Frontend (local)
@@ -207,4 +207,3 @@ where id = '<policy_uuid>';
 * Keep secrets out of Git:
 
   * Commit `.env.example` templates, but never commit real `.env` files.
-

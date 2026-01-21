@@ -1,11 +1,11 @@
-# backend/app/models.py
+# backend/app/policies/models.py
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from sqlalchemy import String, DateTime, ForeignKey, Text, Boolean
+from sqlalchemy import String, DateTime, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from .db import Base
+from app.core.db import Base
 
 class JobStatus:
     QUEUED = "queued"
@@ -15,21 +15,6 @@ class JobStatus:
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
-
-class User(Base):
-    __tablename__ = "users"
-
-    id: Mapped[str] = mapped_column(String, primary_key=True)
-    primary_email: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
-    email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utcnow,
-        onupdate=utcnow,
-    )
 
 class Job(Base):
     __tablename__ = "jobs"

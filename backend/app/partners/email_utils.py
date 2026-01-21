@@ -1,10 +1,10 @@
-# backend/app/email_utils.py
+# backend/app/partners/email_utils.py
 import os
 import smtplib
 from email.message import EmailMessage
 import logging
 
-from .config import settings
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
