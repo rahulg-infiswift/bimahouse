@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
+import { fetchUserRole, isEmployeeRole, UserRole } from "../../lib/roles";
 
 type LeadSummary = {
   in_progress: number;
@@ -38,8 +39,9 @@ const statusConfig: Record<string, { bg: string; text: string; icon: string }> =
 };
 
 export default function AdminLeadsPage() {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
 
+  const [role, setRole] = useState<UserRole | null>(null);
   const [summary, setSummary] = useState<LeadSummary | null>(null);
   const [items, setItems] = useState<LeadListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +63,33 @@ export default function AdminLeadsPage() {
     return { Authorization: `Bearer ${token}` };
   }
 
+  useEffect(() => {
+    let active = true;
+    async function loadRole() {
+      if (!isSignedIn) {
+        setRole(null);
+        return;
+      }
+      const token = await getToken();
+      if (!token) return;
+      const nextRole = await fetchUserRole(API, token);
+      if (active) setRole(nextRole);
+    }
+    void loadRole();
+    return () => {
+      active = false;
+    };
+  }, [getToken, isSignedIn]);
+
   async function load() {
+    if (!isSignedIn) {
+      setLoading(false);
+      return;
+    }
+    if (role && !isEmployeeRole(role)) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setErr(null);
     try {
@@ -87,7 +115,7 @@ export default function AdminLeadsPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isSignedIn, role]);
 
   const cards = useMemo(() => {
     if (!summary) return [];
@@ -248,6 +276,26 @@ export default function AdminLeadsPage() {
     };
     return colors[color] || colors.slate;
   };
+
+  if (!isSignedIn) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-8">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-slate-600">Please sign in to view partner leads.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (role && !isEmployeeRole(role)) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-8">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-slate-600">Your account does not have access to partner leads.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-12 px-4 sm:px-6">

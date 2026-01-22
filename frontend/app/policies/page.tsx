@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { canAccessPolicies, fetchUserRole, UserRole } from "../lib/roles";
 
 type PolicyListItem = {
   policy_id: string;
@@ -30,6 +31,7 @@ export default function PoliciesPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>("");
   const [items, setItems] = useState<PolicyListItem[]>([]);
+  const [role, setRole] = useState<UserRole | null>(null);
   
   // Date filter state
   const [startDate, setStartDate] = useState<string>("");
@@ -46,9 +48,31 @@ export default function PoliciesPage() {
     });
   }
 
+  useEffect(() => {
+    let active = true;
+    async function loadRole() {
+      if (!isSignedIn) {
+        setRole(null);
+        return;
+      }
+      const token = await getToken();
+      if (!token) return;
+      const nextRole = await fetchUserRole(apiBase, token);
+      if (active) setRole(nextRole);
+    }
+    void loadRole();
+    return () => {
+      active = false;
+    };
+  }, [apiBase, getToken, isSignedIn]);
+
   async function loadPolicies() {
     setError("");
     if (!isSignedIn) {
+      setItems([]);
+      return;
+    }
+    if (role && !canAccessPolicies(role)) {
       setItems([]);
       return;
     }
@@ -135,9 +159,35 @@ export default function PoliciesPage() {
   useEffect(() => {
     loadPolicies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn]);
+  }, [isSignedIn, role]);
 
   const extractedCount = items.filter((p) => p.has_extracted_json).length;
+
+  if (!isSignedIn) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Please sign in</h2>
+            <p className="text-sm text-slate-600">Sign in to view your policies.</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (role && !canAccessPolicies(role)) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Access pending</h2>
+            <p className="text-sm text-slate-600">Your account does not have access to policies yet.</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="py-12 px-4 sm:px-6">

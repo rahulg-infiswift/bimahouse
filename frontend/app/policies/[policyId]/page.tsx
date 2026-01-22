@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import PolicyViewer from "./PolicyViewer";
+import { canAccessPolicies, fetchUserRole, UserRole } from "../../lib/roles";
 
 type PolicyResp = {
   policy_id: string;
@@ -31,6 +32,7 @@ export default function PolicyDetailsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>("");
   const [policy, setPolicy] = useState<PolicyResp | null>(null);
+  const [role, setRole] = useState<UserRole | null>(null);
 
   async function fetchWithAuth(path: string, token: string, init?: RequestInit) {
     return fetch(`${apiBase}${path}`, {
@@ -42,9 +44,31 @@ export default function PolicyDetailsPage() {
     });
   }
 
+  useEffect(() => {
+    let active = true;
+    async function loadRole() {
+      if (!isSignedIn) {
+        setRole(null);
+        return;
+      }
+      const token = await getToken();
+      if (!token) return;
+      const nextRole = await fetchUserRole(apiBase, token);
+      if (active) setRole(nextRole);
+    }
+    void loadRole();
+    return () => {
+      active = false;
+    };
+  }, [apiBase, getToken, isSignedIn]);
+
   async function loadPolicy() {
     setError("");
     if (!isSignedIn || !policyId) {
+      setPolicy(null);
+      return;
+    }
+    if (role && !canAccessPolicies(role)) {
       setPolicy(null);
       return;
     }
@@ -101,7 +125,33 @@ export default function PolicyDetailsPage() {
     if (!policyId) return;
     loadPolicy();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn, policyId]);
+  }, [isSignedIn, policyId, role]);
+
+  if (!isSignedIn) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <div className="max-w-5xl mx-auto p-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Please sign in</h2>
+            <p className="text-sm text-slate-600">Sign in to view policy details.</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (role && !canAccessPolicies(role)) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <div className="max-w-5xl mx-auto p-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Access pending</h2>
+            <p className="text-sm text-slate-600">Your account does not have access to policies yet.</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-4 sm:px-6 py-8">

@@ -1,18 +1,8 @@
 // frontend/app/page.tsx
 import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
-
-function isAdmin(userId: string | null | undefined) {
-  if (!userId) return false;
-  const allowList = process.env.NEXT_PUBLIC_ADMIN_USER_IDS || "";
-  return allowList.includes(userId);
-}
 
 export default async function HomePage() {
-  const { userId } = await auth();
-  const admin = isAdmin(userId);
-
   return (
     <div className="py-12 px-4 sm:px-6">
       <div className="mx-auto max-w-6xl">
