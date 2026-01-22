@@ -9,9 +9,42 @@ from app.users.models import Role, User
 
 router = APIRouter(tags=["Admin"])
 
+class UserOut(BaseModel):
+    user_id: str
+    primary_email: str | None
+    email_verified: bool
+    role: str
+    created_at: str
+    updated_at: str
+
 
 class UserRoleUpdateIn(BaseModel):
     role: str
+
+
+@router.get("/v1/admin/users", response_model=list[UserOut])
+def list_users(
+    role: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+    _: User = Depends(require_roles(Role.ADMIN)),
+    db: Session = Depends(get_db),
+):
+    q = db.query(User)
+    if role:
+        q = q.filter(User.role == role)
+    users = q.order_by(User.created_at.desc()).offset(offset).limit(limit).all()
+    return [
+        UserOut(
+            user_id=u.id,
+            primary_email=u.primary_email,
+            email_verified=bool(u.email_verified),
+            role=u.role,
+            created_at=u.created_at.isoformat(),
+            updated_at=u.updated_at.isoformat(),
+        )
+        for u in users
+    ]
 
 
 @router.patch("/v1/admin/users/{user_id}/role")

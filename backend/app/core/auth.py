@@ -59,11 +59,9 @@ def _verify_clerk_jwt(token: str) -> str:
 
 async def get_current_user_id(
     authorization: Optional[str] = Header(default=None),
-    x_user_id: Optional[str] = Header(default=None),
 ) -> str:
-    # DEV shortcut
-    if settings.allow_dev_user_header and x_user_id:
-        return x_user_id
+    if settings.env == "dev" and settings.dev_user_id and not authorization:
+        return settings.dev_user_id
 
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="Missing Authorization Bearer token")
