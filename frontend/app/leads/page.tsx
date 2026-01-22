@@ -1,10 +1,10 @@
-// frontend/app/admin/leads/page.tsx
+// frontend/app/leads/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
-import { fetchUserRole, isEmployeeRole, UserRole } from "../../lib/roles";
+import { fetchUserRole, isEmployeeRole, UserRole } from "../lib/roles";
 
 type LeadSummary = {
   in_progress: number;
@@ -96,8 +96,8 @@ export default function AdminLeadsPage() {
       const headers = await authHeaders();
 
       const [s, l] = await Promise.all([
-        fetch(`${API}/v1/admin/leads/summary`, { headers }),
-        fetch(`${API}/v1/admin/leads`, { headers }),
+        fetch(`${API}/v1/leads/summary`, { headers }),
+        fetch(`${API}/v1/leads`, { headers }),
       ]);
 
       if (!s.ok) throw new Error(`Summary failed: ${s.status} ${await s.text()}`);
@@ -171,7 +171,7 @@ export default function AdminLeadsPage() {
         "Content-Type": "application/json",
       };
 
-      const resp = await fetch(`${API}/v1/admin/leads`, {
+      const resp = await fetch(`${API}/v1/leads`, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -221,7 +221,7 @@ export default function AdminLeadsPage() {
     setBusyLead(leadId);
     try {
       const headers = await authHeaders();
-      const resp = await fetch(`${API}/v1/admin/leads/${leadId}/send-otp`, {
+      const resp = await fetch(`${API}/v1/leads/${leadId}/send-otp`, {
         method: "POST",
         headers,
       });
@@ -247,7 +247,7 @@ export default function AdminLeadsPage() {
         "Content-Type": "application/json",
       };
 
-      const resp = await fetch(`${API}/v1/admin/leads/${leadId}/verify-otp`, {
+      const resp = await fetch(`${API}/v1/leads/${leadId}/verify-otp`, {
         method: "POST",
         headers,
         body: JSON.stringify({ otp }),
@@ -458,7 +458,7 @@ export default function AdminLeadsPage() {
                         )}
 
                         <Link
-                          href={`/admin/leads/${r.lead_id}`}
+                          href={`/leads/${r.lead_id}`}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 transition-colors"
                         >
                           Open

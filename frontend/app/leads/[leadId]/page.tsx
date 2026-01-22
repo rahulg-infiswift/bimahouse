@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { fetchUserRole, isEmployeeRole, UserRole } from "../../../lib/roles";
+import { fetchUserRole, isEmployeeRole, UserRole } from "../../lib/roles";
 
 type LeadDoc = {
   doc_id: string;
@@ -141,7 +141,7 @@ export default function AdminLeadDetailPage() {
     setErr(null);
     setOk(null);
     try {
-      const resp = await fetch(`${API}/v1/admin/leads/${leadId}`, {
+      const resp = await fetch(`${API}/v1/leads/${leadId}`, {
         headers: await authHeaders(),
       });
       if (!resp.ok) throw new Error(`Load failed: ${resp.status} ${await resp.text()}`);
@@ -174,7 +174,7 @@ export default function AdminLeadDetailPage() {
     setErr(null);
     setOk(null);
     try {
-      const resp = await fetch(`${API}/v1/admin/leads/${leadId}`, {
+      const resp = await fetch(`${API}/v1/leads/${leadId}`, {
         method: "PATCH",
         headers: { ...(await authHeaders()), "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -202,9 +202,9 @@ export default function AdminLeadDetailPage() {
       form.append("file", file);
 
       // Backend endpoint expected:
-      // POST /v1/admin/leads/{lead_id}/documents?doc_type=...
+      // POST /v1/leads/{lead_id}/documents?doc_type=...
       const resp = await fetch(
-        `${API}/v1/admin/leads/${leadId}/documents?doc_type=${encodeURIComponent(docType)}`,
+        `${API}/v1/leads/${leadId}/documents?doc_type=${encodeURIComponent(docType)}`,
         {
           method: "POST",
           headers: await authHeaders(),
@@ -248,7 +248,7 @@ export default function AdminLeadDetailPage() {
       <div className="flex items-center justify-between gap-4 mb-6">
         <div>
           <div className="text-sm text-slate-500">
-            <Link href="/admin/leads" className="text-blue-600 hover:text-blue-700">
+            <Link href="/leads" className="text-blue-600 hover:text-blue-700">
               Partner Leads
             </Link>{" "}
             / Details

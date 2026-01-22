@@ -156,8 +156,8 @@ def _lead_to_detail(db: Session, lead: PartnerLead) -> LeadDetailOut:
 # Admin endpoints
 # -------------------------
 
-@router.get("/v1/admin/leads/summary", response_model=LeadSummaryOut)
-def admin_leads_summary(
+@router.get("/v1/leads/summary", response_model=LeadSummaryOut)
+def leads_summary(
     user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
 ):
@@ -177,8 +177,8 @@ def admin_leads_summary(
     )
 
 
-@router.get("/v1/admin/leads", response_model=list[LeadListItem])
-def admin_list_leads(
+@router.get("/v1/leads", response_model=list[LeadListItem])
+def list_leads(
     status: Optional[str] = Query(default=None),
     user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
@@ -207,8 +207,8 @@ def admin_list_leads(
     ]
 
 
-@router.post("/v1/admin/leads", response_model=LeadCreateOut)
-def admin_create_lead(
+@router.post("/v1/leads", response_model=LeadCreateOut)
+def create_lead(
     payload: LeadCreateIn,
     user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
@@ -255,8 +255,8 @@ def admin_create_lead(
     )
 
 
-@router.get("/v1/admin/leads/{lead_id}", response_model=LeadDetailOut)
-def admin_get_lead(
+@router.get("/v1/leads/{lead_id}", response_model=LeadDetailOut)
+def get_lead(
     lead_id: str,
     user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
@@ -269,8 +269,8 @@ def admin_get_lead(
     return _lead_to_detail(db, lead)
 
 
-@router.post("/v1/admin/leads/{lead_id}/send-otp", response_model=OtpSendOut)
-def admin_send_otp(
+@router.post("/v1/leads/{lead_id}/send-otp", response_model=OtpSendOut)
+def send_otp(
     lead_id: str,
     user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
@@ -311,8 +311,8 @@ def admin_send_otp(
     )
 
 
-@router.post("/v1/admin/leads/{lead_id}/verify-otp", response_model=OtpVerifyOut)
-def admin_verify_otp(
+@router.post("/v1/leads/{lead_id}/verify-otp", response_model=OtpVerifyOut)
+def verify_otp(
     lead_id: str,
     payload: OtpVerifyIn,
     user: User = Depends(require_employee_user()),
@@ -356,8 +356,8 @@ def admin_verify_otp(
     return OtpVerifyOut(lead_id=str(lead.id), status=lead.status, email_verified=True)
 
 
-@router.patch("/v1/admin/leads/{lead_id}", response_model=LeadDetailOut)
-def admin_update_lead(
+@router.patch("/v1/leads/{lead_id}", response_model=LeadDetailOut)
+def update_lead(
     lead_id: str,
     payload: AdminLeadUpdateIn,
     user: User = Depends(require_employee_user()),
@@ -435,8 +435,8 @@ def admin_update_lead(
     return _lead_to_detail(db, lead)
 
 
-@router.post("/v1/admin/leads/{lead_id}/documents")
-async def admin_upload_doc(
+@router.post("/v1/leads/{lead_id}/documents")
+async def upload_doc(
     lead_id: str,
     doc_type: str = Query(..., description="aadhaar|pan|marksheet_10|cancelled_cheque|photo|other"),
     file: UploadFile = File(...),
