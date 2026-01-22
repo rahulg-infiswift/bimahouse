@@ -215,26 +215,33 @@ def create_lead(
 ):
 
     # Check for duplicate email, phone, or PAN (if provided)
+    email_normalized = str(payload.email).strip().lower()
+    phone_normalized = payload.phone.strip()
+    pan_normalized = payload.pan_number.strip().upper() if payload.pan_number else None
+
     filters = [
-        PartnerLead.lead_email == str(payload.email).strip().lower(),
-        PartnerLead.phone == payload.phone.strip()
+        func.lower(PartnerLead.lead_email) == email_normalized,
+        PartnerLead.phone == phone_normalized,
     ]
-    if payload.pan_number:
-        filters.append(PartnerLead.profile["pan_number"].astext == payload.pan_number.strip().upper())
-    existing = db.query(PartnerLead).filter(
-        sqlalchemy_or(*filters)
-    ).first()
+    if pan_normalized:
+        filters.append(PartnerProfile.pan_number == pan_normalized)
+
+    existing = (
+        db.query(PartnerLead)
+        .outerjoin(PartnerProfile, PartnerProfile.lead_id == PartnerLead.id)
+        .filter(sqlalchemy_or(*filters))
+        .first()
+    )
     if existing:
         raise HTTPException(status_code=400, detail="A lead with this email, phone, or PAN already exists.")
 
     lead = PartnerLead(
         full_name=payload.full_name.strip(),
-        lead_email=str(payload.email).strip().lower(),
-        phone=(payload.phone.strip() if payload.phone else None),
+        lead_email=email_normalized,
+        phone=(phone_normalized if payload.phone else None),
         status=LeadStatus.IN_PROGRESS,  # Start as IN_PROGRESS
         created_at=utcnow(),
         updated_at=utcnow(),
-        profile={"pan_number": payload.pan_number.strip().upper()} if payload.pan_number else None,
         email_verified_at=None,
         otp_hash=None,
         otp_expires_at=None,
@@ -242,6 +249,10 @@ def create_lead(
         otp_attempts=0,
     )
     db.add(lead)
+    db.flush()
+    if pan_normalized:
+        profile = PartnerProfile(lead_id=lead.id, pan_number=pan_normalized)
+        db.add(profile)
     db.commit()
     db.refresh(lead)  # Refresh to get the generated lead_number
 
