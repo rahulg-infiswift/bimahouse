@@ -7,7 +7,7 @@ from fastapi import Header, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.db import get_db
-from app.users.models import User
+from app.users.models import User, Role
 from app.core.clerk_client import get_primary_email_and_verified
 
 logger = logging.getLogger(__name__)
@@ -71,10 +71,10 @@ async def get_current_user_id(
     token = authorization.split(" ", 1)[1].strip()
     return _verify_clerk_jwt(token)
 
-def _ensure_user_record(user_id: str, db: Session) -> None:
+def _ensure_user_record(user_id: str, db: Session) -> User:
     user = db.query(User).filter(User.id == user_id).first()
     if user and user.primary_email:
-        return
+        return user
 
     email = None
     verified = False
@@ -89,11 +89,12 @@ def _ensure_user_record(user_id: str, db: Session) -> None:
             user.primary_email = email
             user.email_verified = verified
             db.commit()
-        return
+        return user
 
-    user = User(id=user_id, primary_email=email, email_verified=verified)
+    user = User(id=user_id, primary_email=email, email_verified=verified, role=Role.CUSTOMER)
     db.add(user)
     db.commit()
+    return user
 
 async def get_current_user(
     user_id: str = Depends(get_current_user_id),
@@ -101,3 +102,19 @@ async def get_current_user(
 ) -> str:
     _ensure_user_record(user_id, db)
     return user_id
+
+async def get_current_user_record(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> User:
+    return _ensure_user_record(user_id, db)
+
+def require_roles(*roles: str):
+    async def _require(user: User = Depends(get_current_user_record)) -> User:
+        if user.role not in roles:
+            raise HTTPException(status_code=403, detail="Insufficient role")
+        return user
+    return _require
+
+def require_employee_user():
+    return require_roles(*Role.employee_roles())

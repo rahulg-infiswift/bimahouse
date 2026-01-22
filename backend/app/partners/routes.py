@@ -10,8 +10,9 @@ from sqlalchemy import func, text, or_ as sqlalchemy_or
 
 from app.core.config import settings
 from app.core.db import get_db
-from app.core.auth import get_current_user
+from app.core.auth import require_employee_user
 from app.partners.models import PartnerLead, PartnerLeadDocument, PartnerProfile, LeadStatus, DocType
+from app.users.models import Role, User
 from app.partners.schemas import (
     LeadCreateIn, LeadCreateOut, LeadSummaryOut, LeadListItem, LeadDetailOut,
     KycUpdateIn, OtpSendOut, OtpVerifyIn, OtpVerifyOut, AdminLeadUpdateIn,
@@ -21,11 +22,6 @@ from app.partners.storage import save_partner_doc_bytes
 from app.partners.email_utils import send_email  # NEW helper file below
 
 router = APIRouter(tags=["Partners"])
-
-
-def require_admin(user_id: str):
-    if user_id not in (settings.admin_user_ids or []):
-        raise HTTPException(status_code=403, detail="Admin access required")
 
 
 def utcnow():
@@ -162,10 +158,9 @@ def _lead_to_detail(db: Session, lead: PartnerLead) -> LeadDetailOut:
 
 @router.get("/v1/admin/leads/summary", response_model=LeadSummaryOut)
 def admin_leads_summary(
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
 ):
-    require_admin(user_id)
 
     counts = dict(
         db.query(PartnerLead.status, func.count(PartnerLead.id))
@@ -185,10 +180,9 @@ def admin_leads_summary(
 @router.get("/v1/admin/leads", response_model=list[LeadListItem])
 def admin_list_leads(
     status: Optional[str] = Query(default=None),
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
 ):
-    require_admin(user_id)
 
     q = db.query(PartnerLead).order_by(PartnerLead.created_at.desc())
     if status:
@@ -216,10 +210,9 @@ def admin_list_leads(
 @router.post("/v1/admin/leads", response_model=LeadCreateOut)
 def admin_create_lead(
     payload: LeadCreateIn,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
 ):
-    require_admin(user_id)
 
     # Check for duplicate email, phone, or PAN (if provided)
     filters = [
@@ -265,10 +258,9 @@ def admin_create_lead(
 @router.get("/v1/admin/leads/{lead_id}", response_model=LeadDetailOut)
 def admin_get_lead(
     lead_id: str,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
 ):
-    require_admin(user_id)
 
     lead = db.query(PartnerLead).filter(PartnerLead.id == lead_id).first()
     if not lead:
@@ -280,10 +272,9 @@ def admin_get_lead(
 @router.post("/v1/admin/leads/{lead_id}/send-otp", response_model=OtpSendOut)
 def admin_send_otp(
     lead_id: str,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
 ):
-    require_admin(user_id)
 
     lead = db.query(PartnerLead).filter(PartnerLead.id == lead_id).first()
     if not lead:
@@ -324,10 +315,9 @@ def admin_send_otp(
 def admin_verify_otp(
     lead_id: str,
     payload: OtpVerifyIn,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
 ):
-    require_admin(user_id)
 
     lead = db.query(PartnerLead).filter(PartnerLead.id == lead_id).first()
     if not lead:
@@ -370,17 +360,19 @@ def admin_verify_otp(
 def admin_update_lead(
     lead_id: str,
     payload: AdminLeadUpdateIn,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
 ):
-    require_admin(user_id)
 
     lead = db.query(PartnerLead).filter(PartnerLead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
     assign_partner_number = False
-    
+    is_admin = user.role == Role.ADMIN
+    is_sales = user.role == Role.SALES
+    is_reviewer = user.role in {Role.ARM_RM, Role.MANAGER, Role.AREA_MANAGER, Role.ZONAL_HEAD, Role.ADMIN}
+
     if payload.status is not None:
         allowed = {
             LeadStatus.IN_PROGRESS,
@@ -391,20 +383,41 @@ def admin_update_lead(
         }
         if payload.status not in allowed:
             raise HTTPException(status_code=400, detail=f"Invalid status. Allowed: {sorted(list(allowed))}")
-        
+
+        if is_sales and payload.status not in {LeadStatus.IN_PROGRESS, LeadStatus.SUBMITTED}:
+            raise HTTPException(status_code=403, detail="Sales can only move leads up to submitted")
+
+        if is_sales and lead.status not in {LeadStatus.IN_PROGRESS, LeadStatus.SUBMITTED}:
+            raise HTTPException(status_code=403, detail="Sales cannot change status after submission")
+
+        if is_reviewer and not is_admin:
+            if lead.status not in {LeadStatus.SUBMITTED, LeadStatus.IN_REVIEW}:
+                raise HTTPException(status_code=403, detail="Lead must be submitted for review")
+            if payload.status in {LeadStatus.IN_PROGRESS, LeadStatus.SUBMITTED}:
+                raise HTTPException(status_code=403, detail="Reviewer can only move leads after submission")
+
         # Assign partner_number when lead is first approved (done atomically in commit below)
         assign_partner_number = payload.status == LeadStatus.APPROVED and lead.partner_number is None
-        
+
         lead.status = payload.status
 
     if payload.profile is not None:
-        _update_profile(db, lead, payload.profile)
+        if is_admin or is_sales:
+            _update_profile(db, lead, payload.profile)
+        else:
+            raise HTTPException(status_code=403, detail="Only sales/admin can edit lead details")
 
     if payload.internal_notes is not None:
-        lead.internal_notes = payload.internal_notes
+        if is_admin:
+            lead.internal_notes = payload.internal_notes
+        else:
+            raise HTTPException(status_code=403, detail="Only admin can edit internal notes")
 
     if payload.rejection_reason is not None:
-        lead.rejection_reason = payload.rejection_reason
+        if is_admin or is_reviewer:
+            lead.rejection_reason = payload.rejection_reason
+        else:
+            raise HTTPException(status_code=403, detail="Only reviewers/admin can set rejection reason")
 
     lead.updated_at = utcnow()
     
@@ -427,10 +440,9 @@ async def admin_upload_doc(
     lead_id: str,
     doc_type: str = Query(..., description="aadhaar|pan|marksheet_10|cancelled_cheque|photo|other"),
     file: UploadFile = File(...),
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
 ):
-    require_admin(user_id)
 
     lead = db.query(PartnerLead).filter(PartnerLead.id == lead_id).first()
     if not lead:
