@@ -8,6 +8,17 @@ export type UserRole =
   | "zonal_head"
   | "admin";
 
+export const ROLE_OPTIONS: UserRole[] = [
+  "customer",
+  "partner",
+  "sales",
+  "arm_rm",
+  "manager",
+  "area_manager",
+  "zonal_head",
+  "admin",
+];
+
 export const EMPLOYEE_ROLES = new Set<UserRole>([
   "sales",
   "arm_rm",
@@ -23,6 +34,10 @@ export function isEmployeeRole(role: UserRole | null): boolean {
 
 export function canAccessPolicies(role: UserRole | null): boolean {
   return role === "partner" || isEmployeeRole(role);
+}
+
+export function isAdminRole(role: UserRole | null): boolean {
+  return role === "admin";
 }
 
 export async function fetchUserRole(
