@@ -215,17 +215,20 @@ export default function UploadPage() {
     <main className="py-12 px-4 sm:px-6">
       <div className="mx-auto max-w-2xl">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 p-8 shadow-sm mb-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Upload Policy</h1>
-              <p className="mt-1 text-sm text-slate-600">
+              <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white shadow-sm">
+                Policies
+              </span>
+              <h1 className="mt-4 text-3xl font-semibold text-slate-900">Upload Policy</h1>
+              <p className="mt-2 text-sm text-slate-600">
                 Upload a PDF document to extract policy details using AI.
               </p>
             </div>
             <Link
               href="/policies"
-              className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 transition-colors"
             >
               View policies
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -236,7 +239,7 @@ export default function UploadPage() {
         </div>
 
         {/* Upload Form */}
-        <form onSubmit={onSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={onSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-6">
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Policy PDF
@@ -315,7 +318,7 @@ export default function UploadPage() {
 
         {/* Job Status */}
         {extractResp && (
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-start gap-4">
               {getStatusIcon()}
               <div className="flex-1 min-w-0">
@@ -372,7 +375,7 @@ export default function UploadPage() {
         )}
 
         {/* Help Section */}
-        <div className="mt-8 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-5">
+        <div className="mt-8 rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100 p-5">
           <h3 className="text-sm font-semibold text-slate-900 mb-2">Supported Documents</h3>
           <ul className="space-y-2 text-sm text-slate-600">
             <li className="flex items-center gap-2">

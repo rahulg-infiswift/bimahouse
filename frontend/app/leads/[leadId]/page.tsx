@@ -243,25 +243,35 @@ export default function AdminLeadDetailPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="text-sm text-slate-500">
-            <Link href="/leads" className="text-blue-600 hover:text-blue-700">
-              Partner Leads
-            </Link>{" "}
-            / Details
+      <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 p-8 shadow-sm mb-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white shadow-sm">
+              Leads
+            </span>
+            <div className="mt-3 text-sm text-slate-500">
+              <Link href="/leads" className="text-blue-600 hover:text-blue-700">
+                Partner Leads
+              </Link>{" "}
+              / Details
+            </div>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Lead Details</h1>
+            {data?.lead_display_id && (
+              <p className="mt-2 text-sm text-slate-600">
+                Lead ID: <span className="font-mono text-slate-700">{data.lead_display_id}</span>
+              </p>
+            )}
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">Lead Details</h1>
-        </div>
 
-        <button 
-          onClick={() => router.back()} 
-          className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-        >
-          Back
-        </button>
+          <button 
+            onClick={() => router.back()} 
+            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            Back
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -283,7 +293,7 @@ export default function AdminLeadDetailPage() {
           {/* Top summary cards */}
           <div className="grid gap-4 lg:grid-cols-3 mb-6">
             {/* Partner Info */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Partner</div>
               <div className="mt-2 text-lg font-semibold text-slate-900">{data.full_name}</div>
               <div className="mt-1 text-sm text-slate-600">{data.email}</div>
@@ -306,7 +316,7 @@ export default function AdminLeadDetailPage() {
             </div>
 
             {/* IDs */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Lead ID</div>
               <div className="mt-2 text-xl font-bold text-slate-900">{data.lead_display_id}</div>
               {data.partner_display_id && (
@@ -318,7 +328,7 @@ export default function AdminLeadDetailPage() {
             </div>
 
             {/* Status Actions */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Status</div>
 
               <select
@@ -349,7 +359,7 @@ export default function AdminLeadDetailPage() {
           </div>
 
           {/* Partner Details Form */}
-          <div className="rounded-xl border border-slate-200 bg-white p-6 mb-6">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 mb-6 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">Partner Details</h2>
             <p className="text-sm text-slate-500 mt-1">
               Personal information, address, and bank details.
@@ -578,7 +588,7 @@ export default function AdminLeadDetailPage() {
           </div>
 
           {/* Documents */}
-          <div className="rounded-xl border border-slate-200 bg-white p-6">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">Documents</h2>
             <p className="text-sm text-slate-500 mt-1">
               Upload documents collected from the partner.
