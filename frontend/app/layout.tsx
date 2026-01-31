@@ -41,7 +41,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+      className="flex items-center gap-2 rounded-lg px-3.5 py-2 text-[14px] font-semibold text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
     >
       {icon}
       {label}
@@ -73,13 +73,14 @@ export default async function RootLayout({
   const showPolicyLinks = canAccessPolicies(role); // partner + employee
   const showLeadsLink = isEmployeeRole(role);
   const showAdminLink = isAdminRole(role);
+  const showSupportLink = canAccessPolicies(role);
 
   return (
     <ClerkProvider>
       <html lang="en">
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
           <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-sm">
-            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+            <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6">
               <div className="flex items-center gap-6">
                 <Link href="/" className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 shadow-md shadow-blue-200">
@@ -98,6 +99,7 @@ export default async function RootLayout({
                     {showLeadsLink && <NavLink href="/leads" label="Manage Partner Leads" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M5 7h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9a2 2 0 012-2zm4 6h4m-4-3h4" /></svg>} />}
                     {showAdminLink && <NavLink href="/admin" label="Manage Users" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>} />}
                   </SignedIn>
+                  {showSupportLink && <NavLink href="/support" label="Support" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3l2 5-2 1a11 11 0 005 5l1-2 5 2v3a2 2 0 01-2 2 16 16 0 01-14-14z" /></svg>} />}
                   <NavLink href="/about" label="About Us" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} />
                 </nav>
               </div>
@@ -112,6 +114,7 @@ export default async function RootLayout({
                     {showAdminLink && <Link href="/admin" className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg></Link>}
                   </nav>
                 </SignedIn>
+                {showSupportLink && <Link href="/support" className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3l2 5-2 1a11 11 0 005 5l1-2 5 2v3a2 2 0 01-2 2 16 16 0 01-14-14z" /></svg></Link>}
 
                 <SignedOut>
                   <SignInButton>
