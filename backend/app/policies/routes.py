@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from redis import Redis
 from rq import Queue, Retry
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user_record
 from app.core.config import settings
@@ -18,7 +18,7 @@ from app.users.models import Role, User
 from app.policies.storage import save_pdf_bytes
 from app.policies.worker import process_extraction_job
 from app.policies.export_utils import json_to_csv_bytes, json_to_xlsx_bytes, policies_to_xlsx_bytes
-from app.partners.models import PartnerLead
+from app.partners.models import PospApplication
 from app.core.clerk_client import get_primary_email_and_verified
 
 router = APIRouter(tags=["Policies"])
@@ -159,16 +159,15 @@ def download_policies_bulk(
     if not policies:
         raise HTTPException(status_code=404, detail="No extracted policies found for the given date range")
     
-    # Fetch partner info by looking up the user's email from Clerk, then matching to partner_leads.email
+    # Fetch partner info by looking up the user's email from Clerk, then matching to posp_applications.email
     partners_map = {}
     user_ids = list(set(p.user_id for p in policies))
     logger.info("Fetching partner info for user_ids: %s", user_ids)
     for uid in user_ids:
         # First try to find partner by clerk_user_id (if already linked)
         partner = (
-            db.query(PartnerLead)
-            .options(joinedload(PartnerLead.profile_data))
-            .filter(PartnerLead.clerk_user_id == uid)
+            db.query(PospApplication)
+            .filter(PospApplication.clerk_user_id == uid)
             .first()
         )
         
@@ -179,9 +178,8 @@ def download_policies_bulk(
                 logger.info("Fetched email for user %s: %s", uid, email)
                 if email:
                     partner = (
-                        db.query(PartnerLead)
-                        .options(joinedload(PartnerLead.profile_data))
-                        .filter(PartnerLead.lead_email == email)
+                        db.query(PospApplication)
+                        .filter(PospApplication.lead_email == email)
                         .first()
                     )
                     logger.info("Matched partner for email %s: %s", email, partner)

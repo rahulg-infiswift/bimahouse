@@ -5,37 +5,16 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { fetchUserRole, isEmployeeRole, UserRole } from "../../lib/roles";
+import PospApplicationForm, {
+  emptyPospApplicationFields,
+  PospApplicationFields,
+} from "../../components/PospApplicationForm";
 
 type LeadDoc = {
   doc_id: string;
   doc_type: string;
   original_filename: string;
   uploaded_at: string;
-};
-
-type PartnerProfile = {
-  // Personal Details
-  date_of_birth?: string;
-  gender?: string;
-  father_name?: string;
-  
-  // Address
-  address_line1?: string;
-  address_line2?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
-  
-  // Bank Details
-  bank_name?: string;
-  account_holder_name?: string;
-  account_number?: string;
-  ifsc_code?: string;
-  branch_name?: string;
-  
-  // Other
-  pan_number?: string;
-  aadhaar_number?: string;
 };
 
 type LeadDetail = {
@@ -49,7 +28,20 @@ type LeadDetail = {
   status: string;
   clerk_user_id?: string | null;
   email_verified: boolean;
-  profile?: PartnerProfile | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  pan_number?: string | null;
+  aadhaar_number?: string | null;
+  address_line1?: string | null;
+  address_line2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+  bank_name?: string | null;
+  branch_name?: string | null;
+  account_holder_name?: string | null;
+  account_number?: string | null;
+  ifsc_code?: string | null;
   documents: LeadDoc[];
 };
 
@@ -66,49 +58,25 @@ const DOC_TYPES = [
 
 const STATUSES = ["in_progress", "submitted", "in_review", "approved", "rejected"] as const;
 
-const INDIAN_STATES = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
-  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
-  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
-  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
-  "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
-  "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
-];
-
-const emptyProfile: PartnerProfile = {
-  date_of_birth: "",
-  gender: "",
-  father_name: "",
-  address_line1: "",
-  address_line2: "",
-  city: "",
-  state: "",
-  pincode: "",
-  bank_name: "",
-  account_holder_name: "",
-  account_number: "",
-  ifsc_code: "",
-  branch_name: "",
-  pan_number: "",
-  aadhaar_number: "",
-};
-
 export default function AdminLeadDetailPage() {
-  const params = useParams();
+  const params = useParams<{ leadId: string }>();
   const router = useRouter();
-  const leadId = String((params as any)?.leadId || "");
+  const leadId = params?.leadId || "";
   const { getToken, isSignedIn } = useAuth();
 
   const [role, setRole] = useState<UserRole | null>(null);
   const [data, setData] = useState<LeadDetail | null>(null);
-  const [profile, setProfile] = useState<PartnerProfile>(emptyProfile);
+  const [profile, setProfile] = useState<PospApplicationFields>(emptyPospApplicationFields);
   const [status, setStatus] = useState<string>("in_progress");
 
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+
+  function getErrorMessage(error: unknown, fallback: string): string {
+    return error instanceof Error ? error.message : fallback;
+  }
 
   async function authHeaders() {
     const token = await getToken();
@@ -148,9 +116,25 @@ export default function AdminLeadDetailPage() {
       const d: LeadDetail = await resp.json();
       setData(d);
       setStatus(d.status);
-      setProfile({ ...emptyProfile, ...(d.profile || {}) });
-    } catch (e: any) {
-      setErr(e?.message || "Failed to load");
+      setProfile({
+        ...emptyPospApplicationFields,
+        date_of_birth: d.date_of_birth || "",
+        gender: d.gender || "",
+        pan_number: d.pan_number || "",
+        aadhaar_number: d.aadhaar_number || "",
+        address_line1: d.address_line1 || "",
+        address_line2: d.address_line2 || "",
+        city: d.city || "",
+        state: d.state || "",
+        pincode: d.pincode || "",
+        bank_name: d.bank_name || "",
+        branch_name: d.branch_name || "",
+        account_holder_name: d.account_holder_name || "",
+        account_number: d.account_number || "",
+        ifsc_code: d.ifsc_code || "",
+      });
+    } catch (e: unknown) {
+      setErr(getErrorMessage(e, "Failed to load"));
     } finally {
       setLoading(false);
     }
@@ -178,7 +162,7 @@ export default function AdminLeadDetailPage() {
         method: "PATCH",
         headers: { ...(await authHeaders()), "Content-Type": "application/json" },
         body: JSON.stringify({
-          profile,
+          ...profile,
           status,
         }),
       });
@@ -186,8 +170,8 @@ export default function AdminLeadDetailPage() {
       if (!resp.ok) throw new Error(`Save failed: ${resp.status} ${await resp.text()}`);
       setOk("Saved.");
       await load();
-    } catch (e: any) {
-      setErr(e?.message || "Save failed (invalid JSON?)");
+    } catch (e: unknown) {
+      setErr(getErrorMessage(e, "Save failed (invalid JSON?)"));
     } finally {
       setBusy(false);
     }
@@ -215,8 +199,8 @@ export default function AdminLeadDetailPage() {
       if (!resp.ok) throw new Error(`Upload failed: ${resp.status} ${await resp.text()}`);
       setOk("Uploaded document.");
       await load();
-    } catch (e: any) {
-      setErr(e?.message || "Upload failed");
+    } catch (e: unknown) {
+      setErr(getErrorMessage(e, "Upload failed"));
     } finally {
       setBusy(false);
     }
@@ -365,225 +349,17 @@ export default function AdminLeadDetailPage() {
               Personal information, address, and bank details.
             </p>
 
-            <div className="mt-6 space-y-6">
-              {/* Personal Details */}
-              <div>
-                <h3 className="text-sm font-medium text-slate-700 mb-3">Personal Details</h3>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <label className="block">
-                    <span className="text-xs font-medium text-slate-600">Date of Birth</span>
-                    <input
-                      type="date"
-                      value={profile.date_of_birth || ""}
-                      onChange={(e) => setProfile({ ...profile, date_of_birth: e.target.value })}
-                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={busy}
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="text-xs font-medium text-slate-600">Gender</span>
-                    <select
-                      value={profile.gender || ""}
-                      onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
-                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={busy}
-                    >
-                      <option value="">Select</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </label>
-                  <label className="block">
-                    <span className="text-xs font-medium text-slate-600">Father's Name</span>
-                    <input
-                      type="text"
-                      value={profile.father_name || ""}
-                      onChange={(e) => setProfile({ ...profile, father_name: e.target.value })}
-                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Father's full name"
-                      disabled={busy}
-                    />
-                  </label>
-                </div>
-              </div>
+            <PospApplicationForm value={profile} onChange={setProfile} disabled={busy} compact />
 
-              {/* Identity Documents */}
-              <div>
-                <h3 className="text-sm font-medium text-slate-700 mb-3">Identity Documents</h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="text-xs font-medium text-slate-600">PAN Number</span>
-                    <input
-                      type="text"
-                      value={profile.pan_number || ""}
-                      onChange={(e) => setProfile({ ...profile, pan_number: e.target.value.toUpperCase() })}
-                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="ABCDE1234F"
-                      maxLength={10}
-                      disabled={busy}
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="text-xs font-medium text-slate-600">Aadhaar Number</span>
-                    <input
-                      type="text"
-                      value={profile.aadhaar_number || ""}
-                      onChange={(e) => setProfile({ ...profile, aadhaar_number: e.target.value.replace(/\D/g, "") })}
-                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="123456789012"
-                      maxLength={12}
-                      disabled={busy}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {/* Address */}
-              <div>
-                <h3 className="text-sm font-medium text-slate-700 mb-3">Address</h3>
-                <div className="space-y-4">
-                  <label className="block">
-                    <span className="text-xs font-medium text-slate-600">Address Line 1</span>
-                    <input
-                      type="text"
-                      value={profile.address_line1 || ""}
-                      onChange={(e) => setProfile({ ...profile, address_line1: e.target.value })}
-                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="House/Flat No., Building Name, Street"
-                      disabled={busy}
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="text-xs font-medium text-slate-600">Address Line 2</span>
-                    <input
-                      type="text"
-                      value={profile.address_line2 || ""}
-                      onChange={(e) => setProfile({ ...profile, address_line2: e.target.value })}
-                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Landmark, Area (optional)"
-                      disabled={busy}
-                    />
-                  </label>
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <label className="block">
-                      <span className="text-xs font-medium text-slate-600">City</span>
-                      <input
-                        type="text"
-                        value={profile.city || ""}
-                        onChange={(e) => setProfile({ ...profile, city: e.target.value })}
-                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="City"
-                        disabled={busy}
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-medium text-slate-600">State</span>
-                      <select
-                        value={profile.state || ""}
-                        onChange={(e) => setProfile({ ...profile, state: e.target.value })}
-                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={busy}
-                      >
-                        <option value="">Select State</option>
-                        {INDIAN_STATES.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-medium text-slate-600">Pincode</span>
-                      <input
-                        type="text"
-                        value={profile.pincode || ""}
-                        onChange={(e) => setProfile({ ...profile, pincode: e.target.value.replace(/\D/g, "") })}
-                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="6-digit PIN"
-                        maxLength={6}
-                        disabled={busy}
-                      />
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bank Details */}
-              <div>
-                <h3 className="text-sm font-medium text-slate-700 mb-3">Bank Details</h3>
-                <div className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="text-xs font-medium text-slate-600">Bank Name</span>
-                      <input
-                        type="text"
-                        value={profile.bank_name || ""}
-                        onChange={(e) => setProfile({ ...profile, bank_name: e.target.value })}
-                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g., State Bank of India"
-                        disabled={busy}
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-medium text-slate-600">Branch Name</span>
-                      <input
-                        type="text"
-                        value={profile.branch_name || ""}
-                        onChange={(e) => setProfile({ ...profile, branch_name: e.target.value })}
-                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Branch name"
-                        disabled={busy}
-                      />
-                    </label>
-                  </div>
-                  <label className="block">
-                    <span className="text-xs font-medium text-slate-600">Account Holder Name</span>
-                    <input
-                      type="text"
-                      value={profile.account_holder_name || ""}
-                      onChange={(e) => setProfile({ ...profile, account_holder_name: e.target.value })}
-                      className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Name as per bank records"
-                      disabled={busy}
-                    />
-                  </label>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="text-xs font-medium text-slate-600">Account Number</span>
-                      <input
-                        type="text"
-                        value={profile.account_number || ""}
-                        onChange={(e) => setProfile({ ...profile, account_number: e.target.value.replace(/\D/g, "") })}
-                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Account number"
-                        disabled={busy}
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-medium text-slate-600">IFSC Code</span>
-                      <input
-                        type="text"
-                        value={profile.ifsc_code || ""}
-                        onChange={(e) => setProfile({ ...profile, ifsc_code: e.target.value.toUpperCase() })}
-                        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g., SBIN0001234"
-                        maxLength={11}
-                        disabled={busy}
-                      />
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Save Button */}
-              <div className="flex justify-end pt-2">
-                <button
-                  onClick={saveProfileAndStatus}
-                  disabled={busy}
-                  className="rounded-lg bg-blue-600 text-white px-6 py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                >
-                  {busy ? "Saving…" : "Save Partner Details"}
-                </button>
-              </div>
+            {/* Save Button */}
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={saveProfileAndStatus}
+                disabled={busy}
+                className="rounded-lg bg-blue-600 text-white px-6 py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                {busy ? "Saving…" : "Save Partner Details"}
+              </button>
             </div>
           </div>
 

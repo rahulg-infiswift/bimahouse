@@ -11,15 +11,13 @@ class INPhoneNumber(PhoneNumber):
 
 
 # -------------------------
-# Partner Profile Schemas
+# PoSP Application Fields
 # -------------------------
 
-class PartnerProfileIn(BaseModel):
-    """Input schema for creating/updating partner profile"""
+class PospApplicationFields(BaseModel):
     # Personal Details
     date_of_birth: Optional[str] = None  # YYYY-MM-DD format
     gender: Optional[str] = None
-    father_name: Optional[str] = None
 
     # Identity Documents
     pan_number: Optional[str] = Field(None, max_length=10)
@@ -40,28 +38,6 @@ class PartnerProfileIn(BaseModel):
     ifsc_code: Optional[str] = Field(None, max_length=11)
 
 
-class PartnerProfileOut(BaseModel):
-    """Output schema for partner profile"""
-    date_of_birth: Optional[str] = None
-    gender: Optional[str] = None
-    father_name: Optional[str] = None
-
-    pan_number: Optional[str] = None
-    aadhaar_number: Optional[str] = None
-
-    address_line1: Optional[str] = None
-    address_line2: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    pincode: Optional[str] = None
-
-    bank_name: Optional[str] = None
-    branch_name: Optional[str] = None
-    account_holder_name: Optional[str] = None
-    account_number: Optional[str] = None
-    ifsc_code: Optional[str] = None
-
-
 # -------------------------
 # Lead Schemas
 # -------------------------
@@ -71,6 +47,19 @@ class LeadCreateIn(BaseModel):
     email: EmailStr
     phone: INPhoneNumber
     pan_number: Optional[str] = Field(None, min_length=10, max_length=10, pattern=r"^[A-Z]{5}[0-9]{4}[A-Z]$")
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    aadhaar_number: Optional[str] = Field(None, max_length=12)
+    address_line1: Optional[str] = None
+    address_line2: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = Field(None, max_length=6)
+    bank_name: Optional[str] = None
+    branch_name: Optional[str] = None
+    account_holder_name: Optional[str] = None
+    account_number: Optional[str] = None
+    ifsc_code: Optional[str] = Field(None, max_length=11)
 
 
 class LeadCreateOut(BaseModel):
@@ -80,6 +69,7 @@ class LeadCreateOut(BaseModel):
     partner_display_id: Optional[str] = None  # Partner ID if approved (BHP-XXXX)
     status: str
     email_verified: bool
+    created_via: str
 
 
 class LeadSummaryOut(BaseModel):
@@ -99,6 +89,7 @@ class LeadListItem(BaseModel):
     email: str
     phone: str
     status: str
+    created_via: str
     email_verified: bool
     created_at: str
     updated_at: str
@@ -113,6 +104,7 @@ class LeadDetailOut(BaseModel):
     email: str
     phone: str
     status: str
+    created_via: str
 
     email_verified: bool
     email_verified_at: Optional[str] = None
@@ -120,7 +112,20 @@ class LeadDetailOut(BaseModel):
     otp_last_sent_at: Optional[str] = None
     otp_expires_at: Optional[str] = None
 
-    profile: Optional[PartnerProfileOut] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    pan_number: Optional[str] = None
+    aadhaar_number: Optional[str] = None
+    address_line1: Optional[str] = None
+    address_line2: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    bank_name: Optional[str] = None
+    branch_name: Optional[str] = None
+    account_holder_name: Optional[str] = None
+    account_number: Optional[str] = None
+    ifsc_code: Optional[str] = None
     documents: List[Dict[str, Any]]
 
 
@@ -141,13 +146,34 @@ class OtpVerifyOut(BaseModel):
     email_verified: bool
 
 
-class KycUpdateIn(BaseModel):
-    profile: PartnerProfileIn
+class KycUpdateIn(PospApplicationFields):
+    pass
+
+
+class PublicLeadCreateIn(PospApplicationFields):
+    full_name: str = Field(..., min_length=2)
+    email: EmailStr
+    phone: INPhoneNumber
+    pan_number: Optional[str] = Field(None, min_length=10, max_length=10, pattern=r"^[A-Z]{5}[0-9]{4}[A-Z]$")
 
 
 class AdminLeadUpdateIn(BaseModel):
     # Optional updates by admin
     status: Optional[str] = None
-    profile: Optional[PartnerProfileIn] = None
+    # Optional field updates
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    pan_number: Optional[str] = Field(None, max_length=10)
+    aadhaar_number: Optional[str] = Field(None, max_length=12)
+    address_line1: Optional[str] = None
+    address_line2: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = Field(None, max_length=6)
+    bank_name: Optional[str] = None
+    branch_name: Optional[str] = None
+    account_holder_name: Optional[str] = None
+    account_number: Optional[str] = None
+    ifsc_code: Optional[str] = Field(None, max_length=11)
     internal_notes: Optional[str] = None
     rejection_reason: Optional[str] = None

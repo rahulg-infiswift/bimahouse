@@ -23,6 +23,25 @@ export default async function HomePage() {
           </p>
         </div>
 
+        {/* Partner Onboarding Nudge */}
+        <div className="mb-10 rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-blue-50 p-6 sm:p-8 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Partner Opportunity</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Become a PoSP Partner</h2>
+              <p className="mt-2 text-sm text-slate-600 max-w-2xl">
+                Interested in partnering with Bima House? Fill the application form in minutes. Our team reviews every submission and connects with shortlisted applicants.
+              </p>
+            </div>
+            <Link
+              href="/become-partner"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-white shadow-md shadow-emerald-200 hover:bg-emerald-700"
+            >
+              Apply Now
+            </Link>
+          </div>
+        </div>
+
         {/* Insurance Types */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
           <div className="rounded-xl bg-white border border-slate-200 p-4 text-center hover:shadow-md hover:border-blue-200 transition-all">

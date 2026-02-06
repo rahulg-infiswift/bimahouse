@@ -7,7 +7,6 @@ import Link from "next/link";
 import { fetchUserRole, isEmployeeRole, UserRole } from "../lib/roles";
 
 type LeadSummary = {
-  in_progress: number;
   submitted: number;
   in_review: number;
   approved: number;
@@ -23,6 +22,7 @@ type LeadListItem = {
   email: string;
   phone: string;
   status: string;
+  created_via?: string;
   email_verified: boolean;
   created_at: string;
   updated_at: string;
@@ -31,7 +31,6 @@ type LeadListItem = {
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 const statusConfig: Record<string, { bg: string; text: string; icon: string }> = {
-  in_progress: { bg: "bg-blue-100", text: "text-blue-700", icon: "📝" },
   submitted: { bg: "bg-purple-100", text: "text-purple-700", icon: "📤" },
   in_review: { bg: "bg-amber-100", text: "text-amber-700", icon: "👁" },
   approved: { bg: "bg-emerald-100", text: "text-emerald-700", icon: "✓" },
@@ -47,13 +46,6 @@ export default function AdminLeadsPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  const [showModal, setShowModal] = useState(false);
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [modalErr, setModalErr] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [panNumber, setPanNumber] = useState("");
   const [query, setQuery] = useState("");
   const [activeStatus, setActiveStatus] = useState<string>("all");
 
@@ -107,8 +99,8 @@ export default function AdminLeadsPage() {
 
       setSummary(await s.json());
       setItems(await l.json());
-    } catch (e: any) {
-      setErr(e?.message || "Failed to load");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Failed to load");
     } finally {
       setLoading(false);
     }
@@ -122,7 +114,6 @@ export default function AdminLeadsPage() {
   const cards = useMemo(() => {
     if (!summary) return [];
     return [
-      { key: "in_progress", label: "In Progress", value: summary.in_progress, color: "slate" },
       { key: "submitted", label: "Submitted", value: summary.submitted, color: "blue" },
       { key: "in_review", label: "In Review", value: summary.in_review, color: "amber" },
       { key: "approved", label: "Approved", value: summary.approved, color: "emerald" },
@@ -150,94 +141,6 @@ export default function AdminLeadsPage() {
     });
   }, [activeStatus, items, query]);
 
-  async function createLead() {
-    setModalErr(null);
-    
-    // Validation
-    const trimmedName = fullName.trim();
-    const trimmedEmail = email.trim();
-    const trimmedPhone = phone.trim();
-    const trimmedPan = panNumber.trim().toUpperCase();
-
-    if (!trimmedName) {
-      setModalErr("Full name is required");
-      return;
-    }
-    if (!trimmedEmail) {
-      setModalErr("Email is required");
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setModalErr("Please enter a valid email address");
-      return;
-    }
-    if (!trimmedPhone) {
-      setModalErr("Phone number is required");
-      return;
-    }
-    // Accept only 10 digit Indian mobile numbers (with or without country code)
-    const phoneDigits = trimmedPhone.replace(/\D/g, "");
-    if (!(phoneDigits.length === 10 && /^\d{10}$/.test(phoneDigits))) {
-      setModalErr("Please enter a valid 10-digit phone number");
-      return;
-    }
-    if (trimmedPan && !/^([A-Z]{5}[0-9]{4}[A-Z])$/.test(trimmedPan)) {
-      setModalErr("Please enter a valid PAN number (e.g. ABCDE1234F)");
-      return;
-    }
-    
-    setCreating(true);
-    try {
-      const headers = {
-        ...(await authHeaders()),
-        "Content-Type": "application/json",
-      };
-
-      const resp = await fetch(`${API}/v1/leads`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          full_name: trimmedName,
-          email: trimmedEmail,
-          phone: trimmedPhone,
-          pan_number: trimmedPan || undefined,
-        }),
-      });
-
-      if (!resp.ok) {
-        let msg = "";
-        if (resp.status === 422) {
-          msg = "Please check your inputs. Phone number must be 10 digits.";
-        } else {
-          msg = `Create failed: ${resp.status}`;
-          try {
-            const data = await resp.json();
-            if (data && data.detail && typeof data.detail === "string") {
-              if (data.detail.includes("already exists")) {
-                msg = "A lead with this email, phone, or PAN already exists.";
-              } else {
-                msg = data.detail;
-              }
-            }
-          } catch {}
-        }
-        setModalErr(msg);
-        return;
-      }
-  setShowModal(false);
-  setFullName("");
-  setEmail("");
-  setPhone("");
-  setPanNumber("");
-  setModalErr(null);
-  await load();
-    } catch (e: any) {
-      setModalErr(e?.message || "Create failed");
-    } finally {
-      setCreating(false);
-    }
-  }
-
   async function sendOtp(leadId: string) {
     setErr(null);
     setBusyLead(leadId);
@@ -250,8 +153,8 @@ export default function AdminLeadsPage() {
       if (!resp.ok) throw new Error(`Send OTP failed: ${resp.status} ${await resp.text()}`);
       await load();
       alert("OTP sent to lead email.");
-    } catch (e: any) {
-      setErr(e?.message || "Send OTP failed");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Send OTP failed");
     } finally {
       setBusyLead(null);
     }
@@ -280,8 +183,8 @@ export default function AdminLeadsPage() {
       setOtpByLead((prev) => ({ ...prev, [leadId]: "" }));
       await load();
       alert("Email verified.");
-    } catch (e: any) {
-      setErr(e?.message || "Verify OTP failed");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Verify OTP failed");
     } finally {
       setBusyLead(null);
     }
@@ -334,15 +237,15 @@ export default function AdminLeadsPage() {
                 Create, verify, and advance partner lead applications.
               </p>
             </div>
-            <button
-              onClick={() => setShowModal(true)}
+            <Link
+              href="/become-partner?source=sales"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-200 hover:from-blue-700 hover:to-blue-800 transition-all"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              Add New Partner
-            </button>
+              Open PoSP Form
+            </Link>
           </div>
           <div className="mt-8 flex flex-col gap-6">
             <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid sm:grid-cols-3 lg:grid-cols-5 sm:overflow-visible sm:pb-0 sm:snap-none">
@@ -376,7 +279,7 @@ export default function AdminLeadsPage() {
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                {(["all", "in_progress", "submitted", "in_review", "approved", "rejected"] as const).map((status) => (
+                {(["all", "submitted", "in_review", "approved", "rejected"] as const).map((status) => (
                   <button
                     key={status}
                     type="button"
@@ -442,12 +345,12 @@ export default function AdminLeadsPage() {
                 </svg>
               </div>
               <p className="text-sm font-medium text-slate-700 mb-1">No leads yet</p>
-              <p className="text-sm text-slate-500">Click "Add New Partner" to create one.</p>
+              <p className="text-sm text-slate-500">Click &quot;Open PoSP Form&quot; to submit a new application.</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
               {visibleItems.map((r, idx) => {
-                const config = statusConfig[r.status] || statusConfig.in_progress;
+                const config = statusConfig[r.status] || statusConfig.submitted;
                 return (
                   <div
                     key={r.lead_id}
@@ -474,6 +377,11 @@ export default function AdminLeadsPage() {
                           <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${config.bg} ${config.text}`}>
                             {r.status.replace("_", " ")}
                           </span>
+                          {r.created_via && (
+                            <span className="rounded-full bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-medium">
+                              {r.created_via === "self_serve" ? "self-serve" : "sales-assisted"}
+                            </span>
+                          )}
                           <span
                             className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                               r.email_verified
@@ -535,103 +443,6 @@ export default function AdminLeadsPage() {
           )}
         </div>
 
-        {/* Modal */}
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-slate-900">Add New Partner</h2>
-                <button
-                  onClick={() => {
-                    setShowModal(false);
-                    setModalErr(null);
-                  }}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Modal Error */}
-              {modalErr && (
-                <div className="mb-4 flex items-start gap-2 rounded-lg bg-red-50 border border-red-100 p-3">
-                  <svg className="h-4 w-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-sm text-red-700">{modalErr}</p>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Full Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                    placeholder="John Doe"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                    placeholder="john@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Phone <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                    placeholder="+91 98765 43210"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    PAN Number <span className="text-slate-400">(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full uppercase rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                    placeholder="ABCDE1234F"
-                    value={panNumber}
-                    onChange={(e) => setPanNumber(e.target.value)}
-                    maxLength={10}
-                  />
-                </div>
-
-                <button
-                  onClick={createLead}
-                  disabled={creating}
-                  className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-200 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 transition-all"
-                >
-                  {creating ? "Creating..." : "Create Lead"}
-                </button>
-
-                <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
-                  <strong>Next steps:</strong> After creating, use <span className="font-medium">Send OTP</span> and verify using the OTP shared by the partner.
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

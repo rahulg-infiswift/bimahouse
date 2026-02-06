@@ -11,12 +11,12 @@ from sqlalchemy import func, text, or_ as sqlalchemy_or
 from app.core.config import settings
 from app.core.db import get_db
 from app.core.auth import require_employee_user
-from app.partners.models import PartnerLead, PartnerLeadDocument, PartnerProfile, LeadStatus, DocType
+from app.partners.models import PospApplication, PospApplicationDocument, LeadStatus, LeadSource, DocType
 from app.users.models import Role, User
 from app.partners.schemas import (
     LeadCreateIn, LeadCreateOut, LeadSummaryOut, LeadListItem, LeadDetailOut,
     KycUpdateIn, OtpSendOut, OtpVerifyIn, OtpVerifyOut, AdminLeadUpdateIn,
-    PartnerProfileOut, PartnerProfileIn
+    PublicLeadCreateIn
 )
 from app.partners.storage import save_partner_doc_bytes
 from app.partners.email_utils import send_email  # NEW helper file below
@@ -46,83 +46,65 @@ def _generate_otp() -> str:
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
-def _profile_to_out(profile: Optional[PartnerProfile]) -> Optional[PartnerProfileOut]:
-    """Convert PartnerProfile model to output schema"""
-    if not profile:
-        return None
-    return PartnerProfileOut(
-        date_of_birth=profile.date_of_birth.isoformat() if profile.date_of_birth else None,
-        gender=profile.gender,
-        father_name=profile.father_name,
-        pan_number=profile.pan_number,
-        aadhaar_number=profile.aadhaar_number,
-        address_line1=profile.address_line1,
-        address_line2=profile.address_line2,
-        city=profile.city,
-        state=profile.state,
-        pincode=profile.pincode,
-        bank_name=profile.bank_name,
-        branch_name=profile.branch_name,
-        account_holder_name=profile.account_holder_name,
-        account_number=profile.account_number,
-        ifsc_code=profile.ifsc_code,
-    )
-
-
-def _update_profile(db: Session, lead: PartnerLead, profile_in: PartnerProfileIn) -> PartnerProfile:
-    """Create or update PartnerProfile for a lead"""
+def _apply_profile_update(lead: PospApplication, payload: object) -> None:
+    """Update flattened application fields from a payload with matching attributes."""
     from datetime import date as date_type
-    
-    profile = lead.profile_data
-    if not profile:
-        profile = PartnerProfile(lead_id=lead.id)
-        db.add(profile)
-    
-    # Update fields if provided
-    if profile_in.date_of_birth:
+
+    date_of_birth = getattr(payload, "date_of_birth", None)
+    if date_of_birth:
         try:
-            profile.date_of_birth = date_type.fromisoformat(profile_in.date_of_birth)
+            lead.date_of_birth = date_type.fromisoformat(date_of_birth)
         except ValueError:
             pass  # Invalid date format, skip
-    
-    if profile_in.gender is not None:
-        profile.gender = profile_in.gender
-    if profile_in.father_name is not None:
-        profile.father_name = profile_in.father_name
-    if profile_in.pan_number is not None:
-        profile.pan_number = profile_in.pan_number.upper().strip() if profile_in.pan_number else None
-    if profile_in.aadhaar_number is not None:
-        profile.aadhaar_number = profile_in.aadhaar_number.replace(" ", "").strip() if profile_in.aadhaar_number else None
-    if profile_in.address_line1 is not None:
-        profile.address_line1 = profile_in.address_line1
-    if profile_in.address_line2 is not None:
-        profile.address_line2 = profile_in.address_line2
-    if profile_in.city is not None:
-        profile.city = profile_in.city
-    if profile_in.state is not None:
-        profile.state = profile_in.state
-    if profile_in.pincode is not None:
-        profile.pincode = profile_in.pincode.strip() if profile_in.pincode else None
-    if profile_in.bank_name is not None:
-        profile.bank_name = profile_in.bank_name
-    if profile_in.branch_name is not None:
-        profile.branch_name = profile_in.branch_name
-    if profile_in.account_holder_name is not None:
-        profile.account_holder_name = profile_in.account_holder_name
-    if profile_in.account_number is not None:
-        profile.account_number = profile_in.account_number.strip() if profile_in.account_number else None
-    if profile_in.ifsc_code is not None:
-        profile.ifsc_code = profile_in.ifsc_code.upper().strip() if profile_in.ifsc_code else None
-    
-    profile.updated_at = utcnow()
-    return profile
+
+    gender = getattr(payload, "gender", None)
+    if gender is not None:
+        lead.gender = gender
+    pan_number = getattr(payload, "pan_number", None)
+    if pan_number is not None:
+        lead.pan_number = pan_number.upper().strip() if pan_number else None
+    aadhaar_number = getattr(payload, "aadhaar_number", None)
+    if aadhaar_number is not None:
+        lead.aadhaar_number = aadhaar_number.replace(" ", "").strip() if aadhaar_number else None
+    address_line1 = getattr(payload, "address_line1", None)
+    if address_line1 is not None:
+        lead.address_line1 = address_line1
+    address_line2 = getattr(payload, "address_line2", None)
+    if address_line2 is not None:
+        lead.address_line2 = address_line2
+    city = getattr(payload, "city", None)
+    if city is not None:
+        lead.city = city
+    state = getattr(payload, "state", None)
+    if state is not None:
+        lead.state = state
+    pincode = getattr(payload, "pincode", None)
+    if pincode is not None:
+        lead.pincode = pincode.strip() if pincode else None
+    bank_name = getattr(payload, "bank_name", None)
+    if bank_name is not None:
+        lead.bank_name = bank_name
+    branch_name = getattr(payload, "branch_name", None)
+    if branch_name is not None:
+        lead.branch_name = branch_name
+    account_holder_name = getattr(payload, "account_holder_name", None)
+    if account_holder_name is not None:
+        lead.account_holder_name = account_holder_name
+    account_number = getattr(payload, "account_number", None)
+    if account_number is not None:
+        lead.account_number = account_number.strip() if account_number else None
+    ifsc_code = getattr(payload, "ifsc_code", None)
+    if ifsc_code is not None:
+        lead.ifsc_code = ifsc_code.upper().strip() if ifsc_code else None
+
+    lead.updated_at = utcnow()
 
 
-def _lead_to_detail(db: Session, lead: PartnerLead) -> LeadDetailOut:
+def _lead_to_detail(db: Session, lead: PospApplication) -> LeadDetailOut:
     docs = (
-        db.query(PartnerLeadDocument)
-        .filter(PartnerLeadDocument.lead_id == lead.id)
-        .order_by(PartnerLeadDocument.uploaded_at.desc())
+        db.query(PospApplicationDocument)
+        .filter(PospApplicationDocument.lead_id == lead.id)
+        .order_by(PospApplicationDocument.uploaded_at.desc())
         .all()
     )
     return LeadDetailOut(
@@ -134,11 +116,25 @@ def _lead_to_detail(db: Session, lead: PartnerLead) -> LeadDetailOut:
         email=lead.lead_email,
         phone=lead.phone,
         status=lead.status,
+        created_via=lead.created_via,
         email_verified=bool(lead.email_verified_at),
         email_verified_at=_fmt(lead.email_verified_at),
         otp_last_sent_at=_fmt(lead.otp_last_sent_at),
         otp_expires_at=_fmt(lead.otp_expires_at),
-        profile=_profile_to_out(lead.profile_data),
+        date_of_birth=lead.date_of_birth.isoformat() if lead.date_of_birth else None,
+        gender=lead.gender,
+        pan_number=lead.pan_number,
+        aadhaar_number=lead.aadhaar_number,
+        address_line1=lead.address_line1,
+        address_line2=lead.address_line2,
+        city=lead.city,
+        state=lead.state,
+        pincode=lead.pincode,
+        bank_name=lead.bank_name,
+        branch_name=lead.branch_name,
+        account_holder_name=lead.account_holder_name,
+        account_number=lead.account_number,
+        ifsc_code=lead.ifsc_code,
         documents=[
             {
                 "doc_id": str(d.id),
@@ -149,6 +145,75 @@ def _lead_to_detail(db: Session, lead: PartnerLead) -> LeadDetailOut:
             }
             for d in docs
         ],
+    )
+
+
+def _create_lead_record(
+    db: Session,
+    *,
+    full_name: str,
+    email: str,
+    phone: str,
+    pan_number: Optional[str],
+    payload: Optional[object],
+    created_via: str,
+    status: str,
+) -> LeadCreateOut:
+    email_normalized = str(email).strip().lower()
+    phone_normalized = phone.strip()
+    profile_pan = getattr(payload, "pan_number", None) if payload else None
+    pan_value = profile_pan if profile_pan else pan_number
+    pan_normalized = pan_value.strip().upper() if pan_value else None
+
+    filters = [
+        func.lower(PospApplication.lead_email) == email_normalized,
+        PospApplication.phone == phone_normalized,
+    ]
+    if pan_normalized:
+        filters.append(PospApplication.pan_number == pan_normalized)
+
+    existing = (
+        db.query(PospApplication)
+        .filter(sqlalchemy_or(*filters))
+        .first()
+    )
+    if existing:
+        raise HTTPException(status_code=400, detail="A lead with this email, phone, or PAN already exists.")
+
+    lead = PospApplication(
+        full_name=full_name.strip(),
+        lead_email=email_normalized,
+        phone=phone_normalized,
+        created_via=created_via,
+        status=status,
+        created_at=utcnow(),
+        updated_at=utcnow(),
+        email_verified_at=None,
+        otp_hash=None,
+        otp_expires_at=None,
+        otp_last_sent_at=None,
+        otp_attempts=0,
+    )
+    db.add(lead)
+    db.flush()
+
+    if payload is not None:
+        if pan_normalized:
+            setattr(payload, "pan_number", pan_normalized)
+        _apply_profile_update(lead, payload)
+    elif pan_normalized:
+        lead.pan_number = pan_normalized
+    db.commit()
+    db.refresh(lead)
+
+    return LeadCreateOut(
+        lead_id=str(lead.id),
+        display_id=lead.display_id,
+        lead_display_id=lead.lead_display_id,
+        partner_display_id=lead.partner_display_id,
+        status=lead.status,
+        email_verified=False,
+        created_via=lead.created_via,
     )
 
 
@@ -163,8 +228,8 @@ def leads_summary(
 ):
 
     counts = dict(
-        db.query(PartnerLead.status, func.count(PartnerLead.id))
-        .group_by(PartnerLead.status)
+        db.query(PospApplication.status, func.count(PospApplication.id))
+        .group_by(PospApplication.status)
         .all()
     )
 
@@ -184,9 +249,9 @@ def list_leads(
     db: Session = Depends(get_db),
 ):
 
-    q = db.query(PartnerLead).order_by(PartnerLead.created_at.desc())
+    q = db.query(PospApplication).order_by(PospApplication.created_at.desc())
     if status:
-        q = q.filter(PartnerLead.status == status)
+        q = q.filter(PospApplication.status == status)
 
     rows = q.limit(200).all()
     return [
@@ -199,6 +264,7 @@ def list_leads(
             email=r.lead_email,
             phone=r.phone,
             status=r.status,
+            created_via=r.created_via,
             email_verified=bool(r.email_verified_at),
             created_at=r.created_at.isoformat(),
             updated_at=r.updated_at.isoformat(),
@@ -213,56 +279,40 @@ def create_lead(
     user: User = Depends(require_employee_user()),
     db: Session = Depends(get_db),
 ):
-
-    # Check for duplicate email, phone, or PAN (if provided)
-    email_normalized = str(payload.email).strip().lower()
-    phone_normalized = payload.phone.strip()
-    pan_normalized = payload.pan_number.strip().upper() if payload.pan_number else None
-
-    filters = [
-        func.lower(PartnerLead.lead_email) == email_normalized,
-        PartnerLead.phone == phone_normalized,
-    ]
-    if pan_normalized:
-        filters.append(PartnerProfile.pan_number == pan_normalized)
-
-    existing = (
-        db.query(PartnerLead)
-        .outerjoin(PartnerProfile, PartnerProfile.lead_id == PartnerLead.id)
-        .filter(sqlalchemy_or(*filters))
-        .first()
+    return _create_lead_record(
+        db,
+        full_name=payload.full_name,
+        email=str(payload.email),
+        phone=str(payload.phone),
+        pan_number=payload.pan_number,
+        payload=payload,
+        created_via=LeadSource.SALES_ASSISTED,
+        status=LeadStatus.SUBMITTED,
     )
-    if existing:
-        raise HTTPException(status_code=400, detail="A lead with this email, phone, or PAN already exists.")
 
-    lead = PartnerLead(
-        full_name=payload.full_name.strip(),
-        lead_email=email_normalized,
-        phone=(phone_normalized if payload.phone else None),
-        status=LeadStatus.IN_PROGRESS,  # Start as IN_PROGRESS
-        created_at=utcnow(),
-        updated_at=utcnow(),
-        email_verified_at=None,
-        otp_hash=None,
-        otp_expires_at=None,
-        otp_last_sent_at=None,
-        otp_attempts=0,
-    )
-    db.add(lead)
-    db.flush()
-    if pan_normalized:
-        profile = PartnerProfile(lead_id=lead.id, pan_number=pan_normalized)
-        db.add(profile)
-    db.commit()
-    db.refresh(lead)  # Refresh to get the generated lead_number
 
-    return LeadCreateOut(
-        lead_id=str(lead.id),
-        display_id=lead.display_id,
-        lead_display_id=lead.lead_display_id,
-        partner_display_id=lead.partner_display_id,
-        status=lead.status,
-        email_verified=False,
+@router.post("/v1/public/partner-applications", response_model=LeadCreateOut, tags=["Public"])
+def create_public_partner_application(
+    payload: PublicLeadCreateIn,
+    db: Session = Depends(get_db),
+):
+    if payload.aadhaar_number and not payload.aadhaar_number.isdigit():
+        raise HTTPException(status_code=422, detail="Aadhaar number must contain only digits.")
+    if payload.aadhaar_number and len(payload.aadhaar_number) != 12:
+        raise HTTPException(status_code=422, detail="Aadhaar number must be 12 digits.")
+    if payload.pincode and (not payload.pincode.isdigit() or len(payload.pincode) != 6):
+        raise HTTPException(status_code=422, detail="Pincode must be 6 digits.")
+
+    # Public applications are considered submitted for internal review.
+    return _create_lead_record(
+        db,
+        full_name=payload.full_name,
+        email=str(payload.email),
+        phone=str(payload.phone),
+        pan_number=payload.pan_number,
+        payload=payload,
+        created_via=LeadSource.SELF_SERVE,
+        status=LeadStatus.SUBMITTED,
     )
 
 
@@ -273,7 +323,7 @@ def get_lead(
     db: Session = Depends(get_db),
 ):
 
-    lead = db.query(PartnerLead).filter(PartnerLead.id == lead_id).first()
+    lead = db.query(PospApplication).filter(PospApplication.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
@@ -287,7 +337,7 @@ def send_otp(
     db: Session = Depends(get_db),
 ):
 
-    lead = db.query(PartnerLead).filter(PartnerLead.id == lead_id).first()
+    lead = db.query(PospApplication).filter(PospApplication.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
@@ -330,7 +380,7 @@ def verify_otp(
     db: Session = Depends(get_db),
 ):
 
-    lead = db.query(PartnerLead).filter(PartnerLead.id == lead_id).first()
+    lead = db.query(PospApplication).filter(PospApplication.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
@@ -375,7 +425,7 @@ def update_lead(
     db: Session = Depends(get_db),
 ):
 
-    lead = db.query(PartnerLead).filter(PartnerLead.id == lead_id).first()
+    lead = db.query(PospApplication).filter(PospApplication.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
@@ -412,9 +462,24 @@ def update_lead(
 
         lead.status = payload.status
 
-    if payload.profile is not None:
+    if (
+        payload.date_of_birth is not None
+        or payload.gender is not None
+        or payload.pan_number is not None
+        or payload.aadhaar_number is not None
+        or payload.address_line1 is not None
+        or payload.address_line2 is not None
+        or payload.city is not None
+        or payload.state is not None
+        or payload.pincode is not None
+        or payload.bank_name is not None
+        or payload.branch_name is not None
+        or payload.account_holder_name is not None
+        or payload.account_number is not None
+        or payload.ifsc_code is not None
+    ):
         if is_admin or is_sales:
-            _update_profile(db, lead, payload.profile)
+            _apply_profile_update(lead, payload)
         else:
             raise HTTPException(status_code=403, detail="Only sales/admin can edit lead details")
 
@@ -436,7 +501,7 @@ def update_lead(
     if assign_partner_number:
         db.flush()  # Flush other changes first
         result = db.execute(
-            text("UPDATE partner_leads SET partner_number = nextval('partner_number_seq') WHERE id = :lead_id RETURNING partner_number"),
+            text("UPDATE posp_applications SET partner_number = nextval('partner_number_seq') WHERE id = :lead_id RETURNING partner_number"),
             {"lead_id": str(lead.id)}
         )
         lead.partner_number = result.scalar()
@@ -455,7 +520,7 @@ async def upload_doc(
     db: Session = Depends(get_db),
 ):
 
-    lead = db.query(PartnerLead).filter(PartnerLead.id == lead_id).first()
+    lead = db.query(PospApplication).filter(PospApplication.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
@@ -476,7 +541,51 @@ async def upload_doc(
 
     storage_path, _stored = save_partner_doc_bytes(str(lead.id), doc_type, file.filename, content)
 
-    doc = PartnerLeadDocument(
+    doc = PospApplicationDocument(
+        lead_id=lead.id,
+        doc_type=doc_type,
+        storage_key=storage_path,
+        original_filename=file.filename,
+        content_type=file.content_type,
+        size_bytes=len(content),
+    )
+    db.add(doc)
+
+    lead.updated_at = utcnow()
+    db.commit()
+
+    return {"doc_id": str(doc.id), "ok": True}
+
+
+@router.post("/v1/public/partner-applications/{lead_id}/documents", tags=["Public"])
+async def upload_public_doc(
+    lead_id: str,
+    doc_type: str = Query(..., description="aadhaar|pan|marksheet_10|cancelled_cheque|photo|other"),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    lead = db.query(PospApplication).filter(PospApplication.id == lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    allowed = {
+        DocType.AADHAAR,
+        DocType.PAN,
+        DocType.MARKSHEET_10,
+        DocType.CANCELLED_CHEQUE,
+        DocType.PHOTO,
+        DocType.OTHER,
+    }
+    if doc_type not in allowed:
+        raise HTTPException(status_code=400, detail=f"Invalid doc_type. Allowed: {sorted(list(allowed))}")
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File too large (max 10MB)")
+
+    storage_path, _stored = save_partner_doc_bytes(str(lead.id), doc_type, file.filename, content)
+
+    doc = PospApplicationDocument(
         lead_id=lead.id,
         doc_type=doc_type,
         storage_key=storage_path,
