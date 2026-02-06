@@ -236,7 +236,7 @@ export default function AdminLeadsPage() {
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              Open PoSP Form
+              Open POSP Form
             </Link>
           </div>
           <div className="mt-8 flex flex-col gap-4">
@@ -319,7 +319,7 @@ export default function AdminLeadsPage() {
                 </svg>
               </div>
               <p className="text-sm font-medium text-slate-700 mb-1">No leads yet</p>
-              <p className="text-sm text-slate-500">Click &quot;Open PoSP Form&quot; to submit a new application.</p>
+              <p className="text-sm text-slate-500">Click &quot;Open POSP Form&quot; to submit a new application.</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">

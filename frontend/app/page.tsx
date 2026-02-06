@@ -28,7 +28,7 @@ export default async function HomePage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Partner Opportunity</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Become a PoSP Partner</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Become a POSP Partner</h2>
               <p className="mt-2 text-sm text-slate-600 max-w-2xl">
                 Interested in partnering with Bima House? Fill the application form in minutes. Our team reviews every submission and connects with shortlisted applicants.
               </p>

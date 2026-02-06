@@ -11,7 +11,7 @@ class INPhoneNumber(PhoneNumber):
 
 
 # -------------------------
-# PoSP Application Fields
+# POSP Application Fields
 # -------------------------
 
 class PospApplicationFields(BaseModel):

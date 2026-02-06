@@ -145,7 +145,7 @@ export default function BecomePartnerPage() {
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">PoSP Application Form</h2>
+          <h2 className="text-xl font-semibold text-slate-900">POSP Application Form</h2>
           <p className="mt-1 text-sm text-slate-600">Fill the form below and submit your application.</p>
 
           <form onSubmit={submit} className="mt-6 grid gap-4 sm:grid-cols-2">

@@ -25,7 +25,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bima House - Policy Extractor",
+  title: "Bima House - Insurance Platform",
   description: "Upload insurance policy PDFs and extract structured data",
 };
 
