@@ -111,14 +111,18 @@ export default function AdminLeadsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn, role]);
 
-  const cards = useMemo(() => {
-    if (!summary) return [];
-    return [
-      { key: "submitted", label: "Submitted", value: summary.submitted, color: "blue" },
-      { key: "in_review", label: "In Review", value: summary.in_review, color: "amber" },
-      { key: "approved", label: "Approved", value: summary.approved, color: "emerald" },
-      { key: "rejected", label: "Rejected", value: summary.rejected, color: "red" },
-    ];
+  const statusCounts = useMemo(() => {
+    const submitted = summary?.submitted ?? 0;
+    const inReview = summary?.in_review ?? 0;
+    const approved = summary?.approved ?? 0;
+    const rejected = summary?.rejected ?? 0;
+    return {
+      all: submitted + inReview + approved + rejected,
+      submitted,
+      in_review: inReview,
+      approved,
+      rejected,
+    };
   }, [summary]);
 
   const visibleItems = useMemo(() => {
@@ -190,18 +194,6 @@ export default function AdminLeadsPage() {
     }
   }
 
-  const getCardColorClasses = (color: string) => {
-    const colors: Record<string, { bg: string; border: string; text: string; value: string }> = {
-      slate: { bg: "bg-slate-50", border: "border-slate-200", text: "text-slate-600", value: "text-slate-900" },
-      blue: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-600", value: "text-blue-900" },
-      purple: { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-600", value: "text-purple-900" },
-      amber: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-600", value: "text-amber-900" },
-      emerald: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-600", value: "text-emerald-900" },
-      red: { bg: "bg-red-50", border: "border-red-200", text: "text-red-600", value: "text-red-900" },
-    };
-    return colors[color] || colors.slate;
-  };
-
   if (!isSignedIn) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
@@ -247,25 +239,7 @@ export default function AdminLeadsPage() {
               Open PoSP Form
             </Link>
           </div>
-          <div className="mt-8 flex flex-col gap-6">
-            <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid sm:grid-cols-3 lg:grid-cols-5 sm:overflow-visible sm:pb-0 sm:snap-none">
-              {cards.map((c) => {
-                const colors = getCardColorClasses(c.color);
-                return (
-                  <button
-                    key={c.key}
-                    type="button"
-                    onClick={() => setActiveStatus(c.key)}
-                    className={`min-w-[150px] snap-start rounded-2xl border ${colors.border} ${colors.bg} p-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:min-w-0 sm:snap-none ${
-                      activeStatus === c.key ? "ring-2 ring-blue-500/40" : ""
-                    }`}
-                  >
-                    <div className={`text-[11px] font-semibold uppercase tracking-wide ${colors.text} mb-1`}>{c.label}</div>
-                    <div className={`text-xl font-bold ${colors.value}`}>{c.value}</div>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="mt-8 flex flex-col gap-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="flex-1">
                 <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -284,13 +258,13 @@ export default function AdminLeadsPage() {
                     key={status}
                     type="button"
                     onClick={() => setActiveStatus(status)}
-                    className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
+                    className={`inline-flex h-10 items-center rounded-xl px-3 text-[11px] font-semibold uppercase tracking-wide transition ${
                       activeStatus === status
                         ? "bg-slate-900 text-white shadow-sm"
                         : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                     }`}
                   >
-                    {status === "all" ? "All" : status.replace("_", " ")}
+                    {status === "all" ? "All" : status.replace("_", " ")} ({statusCounts[status]})
                   </button>
                 ))}
               </div>

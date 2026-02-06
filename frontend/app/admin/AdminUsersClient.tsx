@@ -193,7 +193,7 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
     <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       <div className="flex flex-col gap-8">
         <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 p-8 shadow-sm">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-6">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white shadow-sm">
                 Admin Console
@@ -202,24 +202,6 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
               <p className="mt-2 text-sm text-slate-600">
                 Assign roles, review access, and keep partner onboarding organized.
               </p>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
-                <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.total}</p>
-              </div>
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-500">Partners</p>
-                <p className="mt-1 text-2xl font-semibold text-blue-700">{stats.partners}</p>
-              </div>
-              <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">Employees</p>
-                <p className="mt-1 text-2xl font-semibold text-amber-700">{stats.employees}</p>
-              </div>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Customers</p>
-                <p className="mt-1 text-2xl font-semibold text-emerald-700">{stats.customers}</p>
-              </div>
             </div>
           </div>
 
@@ -241,23 +223,21 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
                   key={type}
                   type="button"
                   onClick={() => setActiveType(type)}
-                  className={`rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
+                  className={`inline-flex h-10 items-center rounded-xl px-4 text-xs font-semibold uppercase tracking-wide transition ${
                     activeType === type
                       ? "bg-slate-900 text-white shadow-sm"
                       : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  {type === "all" ? "All" : type === "employee" ? "Employees" : `${type[0].toUpperCase()}${type.slice(1)}`}
+                  {type === "all"
+                    ? `All (${stats.total})`
+                    : type === "employee"
+                    ? `Employees (${stats.employees})`
+                    : type === "partner"
+                    ? `Partners (${stats.partners})`
+                    : `Customers (${stats.customers})`}
                 </button>
               ))}
-              <button
-                type="button"
-                onClick={loadUsers}
-                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50"
-                disabled={loading}
-              >
-                Refresh
-              </button>
             </div>
           </div>
 
@@ -269,6 +249,24 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
         </div>
 
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-slate-700">Users</span>
+              <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                {visibleUsers.length}
+              </span>
+            </div>
+            <button
+              onClick={loadUsers}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-60 transition-colors"
+            >
+              <svg className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50/80">
