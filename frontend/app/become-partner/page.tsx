@@ -7,7 +7,7 @@ import PospApplicationForm, {
 } from "../components/PospApplicationForm";
 
 type ApplyResponse = {
-  lead_id: string;
+  application_id: string;
   display_id: string;
   lead_display_id: string;
   partner_display_id?: string | null;
@@ -58,6 +58,10 @@ export default function BecomePartnerPage() {
       setError("Please enter a valid 10-digit phone number.");
       return;
     }
+    if (!(profile.business_location || "").trim()) {
+      setError("Business location is required.");
+      return;
+    }
     if (trimmedPan && !/^([A-Z]{5}[0-9]{4}[A-Z])$/.test(trimmedPan)) {
       setError("Please enter a valid PAN number (e.g. ABCDE1234F).");
       return;
@@ -103,7 +107,7 @@ export default function BecomePartnerPage() {
         const form = new FormData();
         form.append("file", file as File);
         const uploadResp = await fetch(
-          `${API}/v1/public/partner-applications/${data.lead_id}/documents?doc_type=${encodeURIComponent(docType)}`,
+          `${API}/v1/public/partner-applications/${data.application_id}/documents?doc_type=${encodeURIComponent(docType)}`,
           { method: "POST", body: form }
         );
         if (!uploadResp.ok) {
@@ -147,6 +151,9 @@ export default function BecomePartnerPage() {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-slate-900">POSP Application Form</h2>
           <p className="mt-1 text-sm text-slate-600">Fill the form below and submit your application.</p>
+          <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800">
+            Required fields: Full Name, Email, Phone, Business Location.
+          </div>
 
           <form onSubmit={submit} className="mt-6 grid gap-4 sm:grid-cols-2">
             <label className="sm:col-span-2">
@@ -180,7 +187,13 @@ export default function BecomePartnerPage() {
             </label>
 
             <div className="sm:col-span-2">
-              <PospApplicationForm value={profile} onChange={setProfile} disabled={submitting} compact />
+              <PospApplicationForm
+                value={profile}
+                onChange={setProfile}
+                disabled={submitting}
+                compact
+                requiredFields={["business_location"]}
+              />
             </div>
 
             <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">

@@ -14,7 +14,7 @@ type LeadSummary = {
 };
 
 type LeadListItem = {
-  lead_id: string;
+  application_id: string;
   display_id: string;
   lead_display_id: string;
   partner_display_id?: string | null;
@@ -327,7 +327,7 @@ export default function AdminLeadsPage() {
                 const config = statusConfig[r.status] || statusConfig.submitted;
                 return (
                   <div
-                    key={r.lead_id}
+                    key={r.application_id}
                     className={`px-5 py-4 transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-blue-50/40`}
                   >
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -374,8 +374,8 @@ export default function AdminLeadsPage() {
                           <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
                             <span className="text-xs text-amber-700 font-medium">Verify email:</span>
                             <button
-                              onClick={() => sendOtp(r.lead_id)}
-                              disabled={busyLead === r.lead_id}
+                              onClick={() => sendOtp(r.application_id)}
+                              disabled={busyLead === r.application_id}
                               className="inline-flex items-center gap-1 rounded-md bg-amber-600 px-2 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-60 transition-colors"
                             >
                               <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -385,13 +385,13 @@ export default function AdminLeadsPage() {
                             </button>
                             <input
                               placeholder="OTP"
-                              value={otpByLead[r.lead_id] || ""}
-                              onChange={(e) => setOtpByLead((prev) => ({ ...prev, [r.lead_id]: e.target.value }))}
+                              value={otpByLead[r.application_id] || ""}
+                              onChange={(e) => setOtpByLead((prev) => ({ ...prev, [r.application_id]: e.target.value }))}
                               className="w-16 rounded-md border border-amber-300 bg-white px-2 py-1 text-xs text-center font-mono focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/30 transition-all"
                             />
                             <button
-                              onClick={() => verifyOtp(r.lead_id)}
-                              disabled={busyLead === r.lead_id || !otpByLead[r.lead_id]}
+                              onClick={() => verifyOtp(r.application_id)}
+                              disabled={busyLead === r.application_id || !otpByLead[r.application_id]}
                               className="rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-60 transition-colors"
                             >
                               Verify
@@ -400,7 +400,7 @@ export default function AdminLeadsPage() {
                         )}
 
                         <Link
-                          href={`/leads/${r.lead_id}`}
+                          href={`/leads/${r.application_id}`}
                           className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
                         >
                           Open

@@ -18,7 +18,7 @@ type LeadDoc = {
 };
 
 type LeadDetail = {
-  lead_id: string;
+  application_id: string;
   display_id: string;  // Human-readable ID (BHL for leads, BHP for partners)
   lead_display_id: string;  // Always BHL-XXXX
   partner_display_id?: string | null;  // BHP-XXXX when approved
@@ -37,6 +37,9 @@ type LeadDetail = {
   city?: string | null;
   state?: string | null;
   pincode?: string | null;
+  business_location?: string | null;
+  current_insurance_experience?: string | null;
+  preferred_products?: string | null;
   bank_name?: string | null;
   branch_name?: string | null;
   account_holder_name?: string | null;
@@ -56,7 +59,7 @@ const DOC_TYPES = [
   { key: "other", label: "Other" },
 ];
 
-const STATUSES = ["in_progress", "submitted", "in_review", "approved", "rejected"] as const;
+const STATUSES = ["submitted", "in_review", "approved", "rejected"] as const;
 
 export default function AdminLeadDetailPage() {
   const params = useParams<{ leadId: string }>();
@@ -67,7 +70,7 @@ export default function AdminLeadDetailPage() {
   const [role, setRole] = useState<UserRole | null>(null);
   const [data, setData] = useState<LeadDetail | null>(null);
   const [profile, setProfile] = useState<PospApplicationFields>(emptyPospApplicationFields);
-  const [status, setStatus] = useState<string>("in_progress");
+  const [status, setStatus] = useState<string>("submitted");
 
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -127,6 +130,9 @@ export default function AdminLeadDetailPage() {
         city: d.city || "",
         state: d.state || "",
         pincode: d.pincode || "",
+        business_location: d.business_location || "",
+        current_insurance_experience: d.current_insurance_experience || "",
+        preferred_products: d.preferred_products || "",
         bank_name: d.bank_name || "",
         branch_name: d.branch_name || "",
         account_holder_name: d.account_holder_name || "",
@@ -186,7 +192,7 @@ export default function AdminLeadDetailPage() {
       form.append("file", file);
 
       // Backend endpoint expected:
-      // POST /v1/leads/{lead_id}/documents?doc_type=...
+      // POST /v1/leads/{application_id}/documents?doc_type=...
       const resp = await fetch(
         `${API}/v1/leads/${leadId}/documents?doc_type=${encodeURIComponent(docType)}`,
         {
@@ -337,7 +343,7 @@ export default function AdminLeadDetailPage() {
               </button>
 
               <p className="mt-2 text-xs text-slate-500">
-                Use <span className="font-medium">in_progress</span> while collecting docs.
+                Use <span className="font-medium">in_review</span> while reviewing submitted details.
               </p>
             </div>
           </div>
