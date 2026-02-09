@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     clerk_secret_key: Optional[str] = None  # set in env in backend/.env (NOT committed)
     dev_user_id: Optional[str] = None
     partner_jwt_secret: Optional[str] = None
-    partner_jwt_exp_minutes: int = 1440
+    partner_jwt_exp_minutes: int = 10080  # 7 days (increased from 24h for longer partner sessions)
 
 
     # Email OTP + Email sending

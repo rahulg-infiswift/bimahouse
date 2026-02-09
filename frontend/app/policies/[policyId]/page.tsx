@@ -2,17 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import PolicyViewer from "./PolicyViewer";
 import { canAccessPolicies, fetchUserRole, UserRole } from "../../lib/roles";
+import { usePartnerSession } from "../../lib/use-partner-session";
 
 type PolicyResp = {
   policy_id: string;
   original_filename: string;
   created_at: string;
   schema_version: string;
-  extracted_json: any | null;
+  extracted_json: unknown;
 };
 
 const API_BASE_DEFAULT = "http://localhost:8000";
@@ -21,8 +22,8 @@ export default function PolicyDetailsPage() {
   const params = useParams();
   const policyId = (params?.policyId as string) || "";
 
-  const router = useRouter();
   const { getToken, isSignedIn } = useAuth();
+  const { partnerToken, partnerReady } = usePartnerSession();
 
   const apiBase = useMemo(
     () => process.env.NEXT_PUBLIC_API_BASE_URL || API_BASE_DEFAULT,
@@ -47,8 +48,13 @@ export default function PolicyDetailsPage() {
   useEffect(() => {
     let active = true;
     async function loadRole() {
-      if (!isSignedIn) {
+      if (!partnerReady) return;
+      if (!isSignedIn && !partnerToken) {
         setRole(null);
+        return;
+      }
+      if (partnerToken) {
+        if (active) setRole("partner");
         return;
       }
       const token = await getToken();
@@ -60,11 +66,12 @@ export default function PolicyDetailsPage() {
     return () => {
       active = false;
     };
-  }, [apiBase, getToken, isSignedIn]);
+  }, [apiBase, getToken, isSignedIn, partnerToken, partnerReady]);
 
   async function loadPolicy() {
     setError("");
-    if (!isSignedIn || !policyId) {
+    if (!partnerReady) return;
+    if ((!isSignedIn && !partnerToken) || !policyId) {
       setPolicy(null);
       return;
     }
@@ -75,8 +82,8 @@ export default function PolicyDetailsPage() {
 
     setBusy(true);
     try {
-      const token = await getToken();
-      if (!token) throw new Error("Could not retrieve Clerk token.");
+      const token = partnerToken ?? (await getToken());
+      if (!token) throw new Error("Could not retrieve auth token.");
 
       const res = await fetchWithAuth(`/v1/policies/${policyId}`, token);
       if (!res.ok) {
@@ -86,8 +93,8 @@ export default function PolicyDetailsPage() {
 
       const data = (await res.json()) as PolicyResp;
       setPolicy(data);
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -96,8 +103,8 @@ export default function PolicyDetailsPage() {
   async function download(format: "json" | "csv" | "xlsx") {
     setError("");
     try {
-      const token = await getToken();
-      if (!token) throw new Error("Could not retrieve Clerk token.");
+      const token = partnerToken ?? (await getToken());
+      if (!token) throw new Error("Could not retrieve auth token.");
       if (!policyId) throw new Error("Missing policyId.");
 
       const res = await fetchWithAuth(`/v1/policies/${policyId}/download?format=${format}`, token);
@@ -116,8 +123,8 @@ export default function PolicyDetailsPage() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -125,9 +132,21 @@ export default function PolicyDetailsPage() {
     if (!policyId) return;
     loadPolicy();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn, policyId, role]);
+  }, [isSignedIn, policyId, role, partnerToken, partnerReady]);
 
-  if (!isSignedIn) {
+  if (!partnerReady) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <div className="max-w-5xl mx-auto p-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-sm text-slate-600">Loading session...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!isSignedIn && !partnerToken) {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-5xl mx-auto p-6">
@@ -224,7 +243,7 @@ export default function PolicyDetailsPage() {
         )}
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          {!isSignedIn ? (
+          {!isSignedIn && !partnerToken ? (
             <div className="text-sm text-slate-600">
               Please sign in to view this policy.
             </div>

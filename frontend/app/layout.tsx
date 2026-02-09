@@ -3,8 +3,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ClerkProvider,
-  SignInButton,
-  SignUpButton,
   SignedIn,
   SignedOut,
   UserButton,
@@ -12,6 +10,9 @@ import {
 import { auth } from "@clerk/nextjs/server";
 import { canAccessPolicies, isAdminRole, isEmployeeRole, UserRole } from "./lib/roles";
 import { Geist, Geist_Mono } from "next/font/google";
+import { PartnerDesktopNav, PartnerMobileNav, PartnerUserButton } from "./components/PartnerNavLinks";
+import { LoginDropdown } from "./components/LoginDropdown";
+import { HideForPartner } from "./components/AuthWrappers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -92,23 +93,30 @@ export default async function RootLayout({
                 </Link>
                 
                 <nav className="hidden items-center gap-1 xl:flex">
-                  <NavLink href="/become-partner" label="Become Partner" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.12-3 2.5S10.343 13 12 13s3 1.12 3 2.5S13.657 18 12 18m0-10V6m0 12v-2m9-4a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} />
+                  <SignedOut>
+                    <HideForPartner>
+                      <NavLink href="/become-partner" label="Become Partner" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.12-3 2.5S10.343 13 12 13s3 1.12 3 2.5S13.657 18 12 18m0-10V6m0 12v-2m9-4a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} />
+                    </HideForPartner>
+                  </SignedOut>
                   <SignedIn>
                     {showPolicyLinks && (
                       <NavLink href="/policies" label="My Policies" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>} />
                     )}
                     {showLeadsLink && <NavLink href="/leads" label="Manage Partner Leads" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M5 7h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9a2 2 0 012-2zm4 6h4m-4-3h4" /></svg>} />}
                     {showAdminLink && <NavLink href="/admin" label="Manage Users" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>} />}
+                    {showSupportLink && <NavLink href="/support" label="Support" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3l2 5-2 1a11 11 0 005 5l1-2 5 2v3a2 2 0 01-2 2 16 16 0 01-14-14z" /></svg>} />}
                   </SignedIn>
-                  {showSupportLink && <NavLink href="/support" label="Support" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3l2 5-2 1a11 11 0 005 5l1-2 5 2v3a2 2 0 01-2 2 16 16 0 01-14-14z" /></svg>} />}
-                  <NavLink href="/about" label="About Us" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} />
+                  {/* Partner nav links for OTP-logged partners (client component) */}
+                  <PartnerDesktopNav />
+                  <HideForPartner>
+                    <NavLink href="/about" label="About Us" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} />
+                  </HideForPartner>
                 </nav>
               </div>
 
               <div className="flex items-center gap-3">
                 <SignedIn>
                   <nav className="flex items-center gap-1 xl:hidden">
-                    <Link href="/become-partner" className="inline-flex shrink-0 items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100"><svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.12-3 2.5S10.343 13 12 13s3 1.12 3 2.5S13.657 18 12 18m0-10V6m0 12v-2m9-4a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></Link>
                     {showPolicyLinks && (
                       <Link href="/policies" className="inline-flex shrink-0 items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100"><svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></Link>
                     )}
@@ -117,23 +125,18 @@ export default async function RootLayout({
                   </nav>
                 </SignedIn>
                 <SignedOut>
-                  <Link href="/become-partner" className="inline-flex shrink-0 items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 xl:hidden"><svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.12-3 2.5S10.343 13 12 13s3 1.12 3 2.5S13.657 18 12 18m0-10V6m0 12v-2m9-4a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></Link>
+                  <HideForPartner>
+                    <Link href="/become-partner" className="inline-flex shrink-0 items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 xl:hidden"><svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.12-3 2.5S10.343 13 12 13s3 1.12 3 2.5S13.657 18 12 18m0-10V6m0 12v-2m9-4a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></Link>
+                  </HideForPartner>
                 </SignedOut>
                 {showSupportLink && <Link href="/support" className="inline-flex shrink-0 items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100"><svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3l2 5-2 1a11 11 0 005 5l1-2 5 2v3a2 2 0 01-2 2 16 16 0 01-14-14z" /></svg></Link>}
+                {/* Partner mobile nav for OTP-logged partners */}
+                <PartnerMobileNav />
 
                 <SignedOut>
-                  <Link
-                    href="/partner/login"
-                    className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-                  >
-                    Partner Login
-                  </Link>
-                  <SignInButton>
-                    <button className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">Sign In</button>
-                  </SignInButton>
-                  <SignUpButton>
-                    <button className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-blue-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg transition-all">Get Started</button>
-                  </SignUpButton>
+                  <HideForPartner>
+                    <LoginDropdown />
+                  </HideForPartner>
                 </SignedOut>
 
                 <SignedIn>
@@ -141,6 +144,8 @@ export default async function RootLayout({
                     <UserButton />
                   </div>
                 </SignedIn>
+                {/* Partner user button for OTP-logged partners */}
+                <PartnerUserButton />
               </div>
             </div>
           </header>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { canAccessPolicies, fetchUserRole, UserRole } from "../lib/roles";
-import { getPartnerToken } from "../lib/partner-auth";
+import { usePartnerSession } from "../lib/use-partner-session";
 
 type PolicyListItem = {
   policy_id: string;
@@ -33,9 +33,7 @@ export default function PoliciesPage() {
   const [error, setError] = useState<string>("");
   const [items, setItems] = useState<PolicyListItem[]>([]);
   const [role, setRole] = useState<UserRole | null>(null);
-  const [partnerToken] = useState<string | null>(() =>
-    typeof window !== "undefined" ? getPartnerToken() : null
-  );
+  const { partnerToken, partnerReady } = usePartnerSession();
   
   // Date filter state
   const [startDate, setStartDate] = useState<string>("");
@@ -55,6 +53,7 @@ export default function PoliciesPage() {
   useEffect(() => {
     let active = true;
     async function loadRole() {
+      if (!partnerReady) return;
       if (!isSignedIn && !partnerToken) {
         setRole(null);
         return;
@@ -72,10 +71,11 @@ export default function PoliciesPage() {
     return () => {
       active = false;
     };
-  }, [apiBase, getToken, isSignedIn, partnerToken]);
+  }, [apiBase, getToken, isSignedIn, partnerToken, partnerReady]);
 
   async function loadPolicies() {
     setError("");
+    if (!partnerReady) return;
     if (!isSignedIn && !partnerToken) {
       setItems([]);
       return;
@@ -87,8 +87,8 @@ export default function PoliciesPage() {
 
     setBusy(true);
     try {
-      const token = await getToken();
-      const authToken = partnerToken ?? token;
+      // Partners use their own JWT, Clerk users use getToken()
+      const authToken = partnerToken || (await getToken());
       if (!authToken) throw new Error("Could not retrieve auth token.");
 
       const params = new URLSearchParams();
@@ -118,8 +118,8 @@ export default function PoliciesPage() {
     setError("");
     setDownloading(true);
     try {
-      const token = await getToken();
-      const authToken = partnerToken ?? token;
+      // Partners use their own JWT, Clerk users use getToken()
+      const authToken = partnerToken || (await getToken());
       if (!authToken) throw new Error("Could not retrieve auth token.");
 
       const params = new URLSearchParams();
@@ -169,7 +169,19 @@ export default function PoliciesPage() {
   useEffect(() => {
     loadPolicies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn, role, partnerToken]);
+  }, [isSignedIn, role, partnerToken, partnerReady]);
+
+  if (!partnerReady) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-sm text-slate-600">Loading session...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   const extractedCount = items.filter((p) => p.has_extracted_json).length;
 
@@ -329,7 +341,7 @@ export default function PoliciesPage() {
           </div>
 
           {/* Content */}
-          {!isSignedIn ? (
+          {!isSignedIn && !partnerToken ? (
             <div className="flex flex-col items-center justify-center py-16 px-6">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 mb-4">
                 <svg className="h-7 w-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
