@@ -15,7 +15,6 @@ def utcnow():
 
 
 class LeadStatus:
-    IN_PROGRESS = "in_progress"  # optional pre-submit state
     SUBMITTED = "submitted"      # ready for review
     IN_REVIEW = "in_review"
     APPROVED = "approved"
@@ -57,7 +56,11 @@ class PospApplication(Base):
     # Core applicant info
     full_name: Mapped[str] = mapped_column(String, nullable=False)
     lead_email: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    # Canonical E.164 phone (e.g. +919876543210)
     phone: Mapped[str] = mapped_column(String, nullable=False)
+    # Split phone parts for scalable, index-friendly lookups.
+    phone_country_code: Mapped[str] = mapped_column(String(5), nullable=False)
+    phone_national_number: Mapped[str] = mapped_column(String(10), nullable=False)
     created_via: Mapped[str] = mapped_column(String, nullable=False, default=LeadSource.SALES_ASSISTED, index=True)
 
     status: Mapped[str] = mapped_column(String, nullable=False, default=LeadStatus.SUBMITTED, index=True)
@@ -84,6 +87,9 @@ class PospApplication(Base):
     city: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     state: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     pincode: Mapped[Optional[str]] = mapped_column(String(6), nullable=True)
+    business_location: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    current_insurance_experience: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    preferred_products: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     bank_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     branch_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
