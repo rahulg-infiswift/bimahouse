@@ -122,6 +122,12 @@ export default async function RootLayout({
                 {showSupportLink && <Link href="/support" className="inline-flex shrink-0 items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100"><svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3l2 5-2 1a11 11 0 005 5l1-2 5 2v3a2 2 0 01-2 2 16 16 0 01-14-14z" /></svg></Link>}
 
                 <SignedOut>
+                  <Link
+                    href="/partner/login"
+                    className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                  >
+                    Partner Login
+                  </Link>
                   <SignInButton>
                     <button className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">Sign In</button>
                   </SignInButton>

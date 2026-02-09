@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { canAccessPolicies, fetchUserRole, UserRole } from "../lib/roles";
+import { getPartnerToken } from "../lib/partner-auth";
 
 type PolicyListItem = {
   policy_id: string;
@@ -32,6 +33,9 @@ export default function PoliciesPage() {
   const [error, setError] = useState<string>("");
   const [items, setItems] = useState<PolicyListItem[]>([]);
   const [role, setRole] = useState<UserRole | null>(null);
+  const [partnerToken] = useState<string | null>(() =>
+    typeof window !== "undefined" ? getPartnerToken() : null
+  );
   
   // Date filter state
   const [startDate, setStartDate] = useState<string>("");
@@ -51,11 +55,15 @@ export default function PoliciesPage() {
   useEffect(() => {
     let active = true;
     async function loadRole() {
-      if (!isSignedIn) {
+      if (!isSignedIn && !partnerToken) {
         setRole(null);
         return;
       }
-      const token = await getToken();
+      if (partnerToken) {
+        if (active) setRole("partner");
+        return;
+      }
+      const token = partnerToken ?? (await getToken());
       if (!token) return;
       const nextRole = await fetchUserRole(apiBase, token);
       if (active) setRole(nextRole);
@@ -64,11 +72,11 @@ export default function PoliciesPage() {
     return () => {
       active = false;
     };
-  }, [apiBase, getToken, isSignedIn]);
+  }, [apiBase, getToken, isSignedIn, partnerToken]);
 
   async function loadPolicies() {
     setError("");
-    if (!isSignedIn) {
+    if (!isSignedIn && !partnerToken) {
       setItems([]);
       return;
     }
@@ -80,7 +88,8 @@ export default function PoliciesPage() {
     setBusy(true);
     try {
       const token = await getToken();
-      if (!token) throw new Error("Could not retrieve Clerk token.");
+      const authToken = partnerToken ?? token;
+      if (!authToken) throw new Error("Could not retrieve auth token.");
 
       const params = new URLSearchParams();
       if (startDate) params.append("start_date", startDate);
@@ -88,7 +97,7 @@ export default function PoliciesPage() {
       const queryString = params.toString();
       const url = `/v1/policies${queryString ? `?${queryString}` : ""}`;
 
-      const res = await fetchWithAuth(url, token);
+      const res = await fetchWithAuth(url, authToken);
       if (!res.ok) {
         const t = await res.text();
         throw new Error(`List policies failed: ${res.status} ${t}`);
@@ -110,7 +119,8 @@ export default function PoliciesPage() {
     setDownloading(true);
     try {
       const token = await getToken();
-      if (!token) throw new Error("Could not retrieve Clerk token.");
+      const authToken = partnerToken ?? token;
+      if (!authToken) throw new Error("Could not retrieve auth token.");
 
       const params = new URLSearchParams();
       if (startDate) params.append("start_date", startDate);
@@ -118,7 +128,7 @@ export default function PoliciesPage() {
       const queryString = params.toString();
       const url = `/v1/policies/download/bulk${queryString ? `?${queryString}` : ""}`;
 
-      const res = await fetchWithAuth(url, token);
+      const res = await fetchWithAuth(url, authToken);
 
       if (!res.ok) {
         const t = await res.text();
@@ -159,11 +169,11 @@ export default function PoliciesPage() {
   useEffect(() => {
     loadPolicies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn, role]);
+  }, [isSignedIn, role, partnerToken]);
 
   const extractedCount = items.filter((p) => p.has_extracted_json).length;
 
-  if (!isSignedIn) {
+  if (!isSignedIn && !partnerToken) {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-6xl mx-auto p-6">

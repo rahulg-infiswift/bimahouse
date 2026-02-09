@@ -1,7 +1,7 @@
 from typing import Optional
 import logging
 import requests
-from jose import jwk, jwt
+from jose import jwk, jwt, JWTError
 from jose.utils import base64url_decode
 from fastapi import Header, HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -56,6 +56,25 @@ def _verify_clerk_jwt(token: str) -> str:
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token (missing subject)")
     return user_id
+
+
+def _verify_partner_jwt(token: str) -> str:
+    secret = settings.partner_jwt_secret
+    if not secret:
+        raise HTTPException(status_code=500, detail="Partner auth not configured: PARTNER_JWT_SECRET missing")
+    try:
+        claims = jwt.decode(token, secret, algorithms=["HS256"], options={"verify_aud": False})
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail="Invalid partner token") from exc
+
+    token_type = claims.get("typ")
+    if token_type != "partner":
+        raise HTTPException(status_code=401, detail="Invalid partner token type")
+
+    partner_application_id = claims.get("sub")
+    if not partner_application_id:
+        raise HTTPException(status_code=401, detail="Invalid partner token (missing subject)")
+    return partner_application_id
 
 async def get_current_user_id(
     authorization: Optional[str] = Header(default=None),
@@ -116,3 +135,12 @@ def require_roles(*roles: str):
 
 def require_employee_user():
     return require_roles(*Role.employee_roles())
+
+
+async def get_current_partner_application_id(
+    authorization: Optional[str] = Header(default=None),
+) -> str:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Missing Authorization Bearer token")
+    token = authorization.split(" ", 1)[1].strip()
+    return _verify_partner_jwt(token)

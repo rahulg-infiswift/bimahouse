@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { canAccessPolicies, fetchUserRole, UserRole } from "../lib/roles";
+import { getPartnerToken } from "../lib/partner-auth";
 
 const SUPPORT_EMAIL = "support@bimahouse.com";
 
@@ -21,6 +22,9 @@ export default function SupportPage() {
   );
 
   const [role, setRole] = useState<UserRole | null>(null);
+  const [partnerToken] = useState<string | null>(() =>
+    typeof window !== "undefined" ? getPartnerToken() : null
+  );
   const [userEmail, setUserEmail] = useState<string>("");
   const [form, setForm] = useState<SupportForm>({
     topic: "policy",
@@ -33,11 +37,16 @@ export default function SupportPage() {
   useEffect(() => {
     let active = true;
     async function loadRole() {
-      if (!isSignedIn) {
+      if (!isSignedIn && !partnerToken) {
         setRole(null);
         return;
       }
-      const token = await getToken();
+      if (partnerToken) {
+        if (active) setRole("partner");
+        setUserEmail("");
+        return;
+      }
+      const token = partnerToken ?? (await getToken());
       if (!token) return;
       const nextRole = await fetchUserRole(apiBase, token);
       if (!active) return;
@@ -59,7 +68,7 @@ export default function SupportPage() {
     return () => {
       active = false;
     };
-  }, [apiBase, getToken, isSignedIn]);
+  }, [apiBase, getToken, isSignedIn, partnerToken]);
 
   function buildMailtoLink() {
     const subject = form.subject.trim() || "Support request";
@@ -97,7 +106,7 @@ export default function SupportPage() {
     window.location.href = mailto;
   }
 
-  if (!isSignedIn) {
+  if (!isSignedIn && !partnerToken) {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-4xl mx-auto p-6">

@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     clerk_issuer: str = "https://sincere-akita-46.clerk.accounts.dev"
     clerk_secret_key: Optional[str] = None  # set in env in backend/.env (NOT committed)
     dev_user_id: Optional[str] = None
+    partner_jwt_secret: Optional[str] = None
+    partner_jwt_exp_minutes: int = 1440
 
 
     # Email OTP + Email sending
@@ -36,6 +38,13 @@ class Settings(BaseSettings):
     smtp_user: Optional[str] = None
     smtp_password: Optional[str] = None
     smtp_from: Optional[str] = None
+
+    # SMS OTP delivery
+    # "console" logs SMS content; "twilio" sends real SMS.
+    sms_mode: str = "console"
+    twilio_account_sid: Optional[str] = None
+    twilio_auth_token: Optional[str] = None
+    twilio_from_number: Optional[str] = None
 
 
 settings = Settings()
