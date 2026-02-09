@@ -1,6 +1,6 @@
-"""Add partner phone split and POSP application fields
+"""POSP phone split and add location, experience and preferred products fields
 
-Revision ID: 007_partner_phone_and_posp_fields
+Revision ID: 007_split_phone_add_posp_fields
 Revises: 006_posp_applications
 Create Date: 2026-02-08
 """
@@ -10,7 +10,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision: str = "007_partner_phone_and_posp_fields"
+revision: str = "007_split_phone_add_posp_fields"
 down_revision: Union[str, None] = "006_posp_applications"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
