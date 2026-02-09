@@ -10,7 +10,7 @@ from redis import Redis
 from rq import Queue, Retry
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_partner_application_id
+from app.core.auth import get_current_posp_application_id
 from app.core.config import settings
 from app.core.db import get_db
 from app.policies.models import Job, Policy, JobStatus
@@ -26,22 +26,22 @@ redis_conn = Redis.from_url(settings.redis_url)
 queue = Queue(settings.rq_queue_name, connection=redis_conn)
 
 
-def _get_current_partner(
-    partner_application_id: str = Depends(get_current_partner_application_id),
+def _get_current_approved_posp_application(
+    posp_application_id: str = Depends(get_current_posp_application_id),
     db: Session = Depends(get_db),
 ) -> PospApplication:
-    partner = db.query(PospApplication).filter(PospApplication.id == partner_application_id).first()
-    if not partner:
+    posp_application = db.query(PospApplication).filter(PospApplication.id == posp_application_id).first()
+    if not posp_application:
         raise HTTPException(status_code=401, detail="Invalid partner session")
-    if partner.status != "approved":
+    if posp_application.status != "approved":
         raise HTTPException(status_code=403, detail="Partner account is not approved")
-    return partner
+    return posp_application
 
 
 @router.post("/v1/policies/extract")
 async def extract_policy(
     file: UploadFile = File(...),
-    partner: PospApplication = Depends(_get_current_partner),
+    posp_application: PospApplication = Depends(_get_current_approved_posp_application),
     db: Session = Depends(get_db),
 ):
     if not file.filename.lower().endswith(".pdf"):
@@ -54,7 +54,7 @@ async def extract_policy(
 
     policy = Policy(
         id=uuid.uuid4(),
-        user_id=f"partner:{partner.id}",
+        user_id=f"partner:{posp_application.id}",
         original_filename=file.filename,
         pdf_storage_key=pdf_path,
         schema_version="v1",
@@ -65,7 +65,7 @@ async def extract_policy(
 
     job = Job(
         id=uuid.uuid4(),
-        user_id=f"partner:{partner.id}",
+        user_id=f"partner:{posp_application.id}",
         status=JobStatus.QUEUED,
         error_message=None,
         policy_id=policy.id,
@@ -79,14 +79,14 @@ async def extract_policy(
     return {"job_id": str(job.id), "policy_id": str(policy.id)}
 
 
-def _apply_policy_scope(query, partner: PospApplication):
-    return query.filter(Policy.user_id == f"partner:{partner.id}")
+def _apply_policy_scope(query, posp_application: PospApplication):
+    return query.filter(Policy.user_id == f"partner:{posp_application.id}")
 
 
 @router.get("/v1/jobs/{job_id}")
-def get_job(job_id: uuid.UUID, partner: PospApplication = Depends(_get_current_partner), db: Session = Depends(get_db)):
+def get_job(job_id: uuid.UUID, posp_application: PospApplication = Depends(_get_current_approved_posp_application), db: Session = Depends(get_db)):
     job_query = db.query(Job).filter(Job.id == job_id)
-    job_query = job_query.filter(Job.user_id == f"partner:{partner.id}")
+    job_query = job_query.filter(Job.user_id == f"partner:{posp_application.id}")
     job = job_query.first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -105,10 +105,10 @@ def get_job(job_id: uuid.UUID, partner: PospApplication = Depends(_get_current_p
 def list_policies(
     start_date: Optional[date] = Query(default=None, description="Filter policies created on or after this date (YYYY-MM-DD)"),
     end_date: Optional[date] = Query(default=None, description="Filter policies created on or before this date (YYYY-MM-DD)"),
-    partner: PospApplication = Depends(_get_current_partner),
+    posp_application: PospApplication = Depends(_get_current_approved_posp_application),
     db: Session = Depends(get_db),
 ):
-    q = _apply_policy_scope(db.query(Policy), partner)
+    q = _apply_policy_scope(db.query(Policy), posp_application)
     
     if start_date:
         start_datetime = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
@@ -138,11 +138,11 @@ def list_policies(
 def download_policies_bulk(
     start_date: Optional[date] = Query(default=None, description="Filter policies created on or after this date (YYYY-MM-DD)"),
     end_date: Optional[date] = Query(default=None, description="Filter policies created on or before this date (YYYY-MM-DD)"),
-    partner: PospApplication = Depends(_get_current_partner),
+    posp_application: PospApplication = Depends(_get_current_approved_posp_application),
     db: Session = Depends(get_db),
 ):
     """Download all policies with extracted data as a single Excel file (one row per policy)."""
-    q = _apply_policy_scope(db.query(Policy), partner).filter(Policy.extracted_json.isnot(None))
+    q = _apply_policy_scope(db.query(Policy), posp_application).filter(Policy.extracted_json.isnot(None))
     
     if start_date:
         start_datetime = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
@@ -158,18 +158,18 @@ def download_policies_bulk(
         raise HTTPException(status_code=404, detail="No extracted policies found for the given date range")
     
     # Fetch partner info from principal ids of the form "partner:<posp_application_id>".
-    partners_map = {}
+    posp_applications_map = {}
     user_ids = list(set(p.user_id for p in policies))
     logger.info("Fetching partner info for user_ids: %s", user_ids)
     for uid in user_ids:
         if not uid.startswith("partner:"):
             continue
         partner_id = uid.split("partner:", 1)[1]
-        partner_row = db.query(PospApplication).filter(PospApplication.id == partner_id).first()
-        if partner_row:
-            partners_map[uid] = partner_row
+        posp_application_row = db.query(PospApplication).filter(PospApplication.id == partner_id).first()
+        if posp_application_row:
+            posp_applications_map[uid] = posp_application_row
     
-    xlsx_bytes = policies_to_xlsx_bytes(policies, partners_map)
+    xlsx_bytes = policies_to_xlsx_bytes(policies, posp_applications_map)
     
     # Generate filename with date range
     filename_parts = ["policies"]
@@ -187,8 +187,8 @@ def download_policies_bulk(
 
 
 @router.get("/v1/policies/{policy_id}")
-def get_policy(policy_id: uuid.UUID, partner: PospApplication = Depends(_get_current_partner), db: Session = Depends(get_db)):
-    q = _apply_policy_scope(db.query(Policy).filter(Policy.id == policy_id), partner)
+def get_policy(policy_id: uuid.UUID, posp_application: PospApplication = Depends(_get_current_approved_posp_application), db: Session = Depends(get_db)):
+    q = _apply_policy_scope(db.query(Policy).filter(Policy.id == policy_id), posp_application)
     policy = q.first()
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
@@ -206,10 +206,10 @@ def get_policy(policy_id: uuid.UUID, partner: PospApplication = Depends(_get_cur
 def download_policy(
     policy_id: uuid.UUID,
     format: str = Query(default="json", pattern="^(json|csv|xlsx)$"),
-    partner: PospApplication = Depends(_get_current_partner),
+    posp_application: PospApplication = Depends(_get_current_approved_posp_application),
     db: Session = Depends(get_db),
 ):
-    q = _apply_policy_scope(db.query(Policy).filter(Policy.id == policy_id), partner)
+    q = _apply_policy_scope(db.query(Policy).filter(Policy.id == policy_id), posp_application)
     policy = q.first()
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")

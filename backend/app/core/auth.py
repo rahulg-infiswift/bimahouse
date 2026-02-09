@@ -137,7 +137,7 @@ def require_employee_user():
     return require_roles(*Role.employee_roles())
 
 
-async def get_current_partner_application_id(
+async def get_current_posp_application_id(
     authorization: Optional[str] = Header(default=None),
 ) -> str:
     if not authorization or not authorization.lower().startswith("bearer "):
