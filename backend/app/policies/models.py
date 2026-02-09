@@ -20,7 +20,12 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    posp_application_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("posp_applications.id"),
+        nullable=True,
+        index=True,
+    )
     status: Mapped[str] = mapped_column(String, nullable=False, default=JobStatus.QUEUED, index=True)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
@@ -39,7 +44,12 @@ class Policy(Base):
     __tablename__ = "policies"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    posp_application_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("posp_applications.id"),
+        nullable=True,
+        index=True,
+    )
 
     original_filename: Mapped[str] = mapped_column(String, nullable=False)
     pdf_storage_key: Mapped[str] = mapped_column(String, nullable=False)   # local path

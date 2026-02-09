@@ -54,7 +54,7 @@ async def extract_policy(
 
     policy = Policy(
         id=uuid.uuid4(),
-        user_id=f"partner:{posp_application.id}",
+        posp_application_id=posp_application.id,
         original_filename=file.filename,
         pdf_storage_key=pdf_path,
         schema_version="v1",
@@ -65,7 +65,7 @@ async def extract_policy(
 
     job = Job(
         id=uuid.uuid4(),
-        user_id=f"partner:{posp_application.id}",
+        posp_application_id=posp_application.id,
         status=JobStatus.QUEUED,
         error_message=None,
         policy_id=policy.id,
@@ -80,13 +80,13 @@ async def extract_policy(
 
 
 def _apply_policy_scope(query, posp_application: PospApplication):
-    return query.filter(Policy.user_id == f"partner:{posp_application.id}")
+    return query.filter(Policy.posp_application_id == posp_application.id)
 
 
 @router.get("/v1/jobs/{job_id}")
 def get_job(job_id: uuid.UUID, posp_application: PospApplication = Depends(_get_current_approved_posp_application), db: Session = Depends(get_db)):
     job_query = db.query(Job).filter(Job.id == job_id)
-    job_query = job_query.filter(Job.user_id == f"partner:{posp_application.id}")
+    job_query = job_query.filter(Job.posp_application_id == posp_application.id)
     job = job_query.first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -157,17 +157,15 @@ def download_policies_bulk(
     if not policies:
         raise HTTPException(status_code=404, detail="No extracted policies found for the given date range")
     
-    # Fetch partner info from principal ids of the form "partner:<posp_application_id>".
+    # Fetch partner info by posp_application_id only.
     posp_applications_map = {}
-    user_ids = list(set(p.user_id for p in policies))
-    logger.info("Fetching partner info for user_ids: %s", user_ids)
-    for uid in user_ids:
-        if not uid.startswith("partner:"):
-            continue
-        partner_id = uid.split("partner:", 1)[1]
-        posp_application_row = db.query(PospApplication).filter(PospApplication.id == partner_id).first()
+    posp_application_ids = list({p.posp_application_id for p in policies if p.posp_application_id is not None})
+    logger.info("Fetching partner info for posp_application_ids: %s", posp_application_ids)
+
+    for application_id in posp_application_ids:
+        posp_application_row = db.query(PospApplication).filter(PospApplication.id == application_id).first()
         if posp_application_row:
-            posp_applications_map[uid] = posp_application_row
+            posp_applications_map[str(application_id)] = posp_application_row
     
     xlsx_bytes = policies_to_xlsx_bytes(policies, posp_applications_map)
     

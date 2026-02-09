@@ -247,7 +247,7 @@ def policies_to_xlsx_bytes(policies: List[Any], partners_map: Optional[Dict[str,
     
     Args:
         policies: List of Policy objects
-        partners_map: Dict mapping user_id to PospApplication objects (optional)
+        partners_map: Dict mapping posp_application_id to PospApplication objects
     """
     wb = Workbook()
     ws = wb.active
@@ -261,7 +261,9 @@ def policies_to_xlsx_bytes(policies: List[Any], partners_map: Optional[Dict[str,
         flat: Dict[str, str] = {}
         
         # Partner details (if available)
-        partner = partners_map.get(policy.user_id) if partners_map else None
+        partner = None
+        if partners_map and getattr(policy, "posp_application_id", None):
+            partner = partners_map.get(str(policy.posp_application_id))
         partner_bhp_id = None
         if partner:
             flat["partner_name"] = partner.full_name or ""
