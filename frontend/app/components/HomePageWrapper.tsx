@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { usePartnerSession } from "../lib/use-partner-session";
-import { UserRole } from "../lib/roles";
+import { UserRole, isEmployeeRole } from "../lib/roles";
 
 interface HomePageWrapperProps {
   clerkUserId: string | null;
@@ -10,6 +10,7 @@ interface HomePageWrapperProps {
   LoggedOutHome: ReactNode;
   CustomerHome: ReactNode;
   PartnerDashboard: ReactNode;
+  EmployeeHome: ReactNode;
 }
 
 export default function HomePageWrapper({
@@ -18,6 +19,7 @@ export default function HomePageWrapper({
   LoggedOutHome,
   CustomerHome,
   PartnerDashboard,
+  EmployeeHome,
 }: HomePageWrapperProps) {
   const { partnerToken, partnerReady } = usePartnerSession();
   const [mounted, setMounted] = useState(false);
@@ -31,6 +33,9 @@ export default function HomePageWrapper({
     // Show loading or the server-rendered content temporarily
     // For SSR, show based on Clerk auth only
     if (clerkUserId) {
+      if (isEmployeeRole(clerkRole)) {
+        return <>{EmployeeHome}</>;
+      }
       if (clerkRole === "partner") {
         return <>{PartnerDashboard}</>;
       }
@@ -46,6 +51,10 @@ export default function HomePageWrapper({
 
   // Clerk user logged in
   if (clerkUserId) {
+    // Check for employee role first
+    if (isEmployeeRole(clerkRole)) {
+      return <>{EmployeeHome}</>;
+    }
     if (clerkRole === "partner") {
       return <>{PartnerDashboard}</>;
     }

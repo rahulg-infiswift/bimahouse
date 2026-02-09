@@ -58,14 +58,19 @@ export default function UploadPage() {
         setRole(null);
         return;
       }
+      // Clerk users (including employees) use Clerk token to fetch their role
+      if (isSignedIn) {
+        const token = await getToken();
+        if (!token) return;
+        const nextRole = await fetchUserRole(apiBase, token);
+        if (active) setRole(nextRole);
+        return;
+      }
+      // Only use partner token if not signed in via Clerk
       if (partnerToken) {
         if (active) setRole("partner");
         return;
       }
-      const token = partnerToken ?? (await getToken());
-      if (!token) return;
-      const nextRole = await fetchUserRole(apiBase, token);
-      if (active) setRole(nextRole);
     }
     void loadRole();
     return () => {
@@ -114,7 +119,8 @@ export default function UploadPage() {
 
     setBusy(true);
     try {
-      const token = partnerToken ?? (await getToken());
+      // Clerk users use Clerk token; only use partner token if not signed in via Clerk
+      const token = isSignedIn ? (await getToken()) : partnerToken;
       if (!token) throw new Error("Could not retrieve auth token.");
 
       const form = new FormData();

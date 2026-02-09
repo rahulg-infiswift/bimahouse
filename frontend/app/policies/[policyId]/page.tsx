@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import PolicyViewer from "./PolicyViewer";
-import { canAccessPolicies, fetchUserRole, UserRole } from "../../lib/roles";
+import { canAccessPolicies, fetchUserRole, isEmployeeRole, UserRole } from "../../lib/roles";
 import { usePartnerSession } from "../../lib/use-partner-session";
 
 type PolicyResp = {
@@ -53,14 +53,19 @@ export default function PolicyDetailsPage() {
         setRole(null);
         return;
       }
+      // Clerk users (including employees) use Clerk token to fetch their role
+      if (isSignedIn) {
+        const token = await getToken();
+        if (!token) return;
+        const nextRole = await fetchUserRole(apiBase, token);
+        if (active) setRole(nextRole);
+        return;
+      }
+      // Only use partner token if not signed in via Clerk
       if (partnerToken) {
         if (active) setRole("partner");
         return;
       }
-      const token = await getToken();
-      if (!token) return;
-      const nextRole = await fetchUserRole(apiBase, token);
-      if (active) setRole(nextRole);
     }
     void loadRole();
     return () => {
@@ -82,7 +87,8 @@ export default function PolicyDetailsPage() {
 
     setBusy(true);
     try {
-      const token = partnerToken ?? (await getToken());
+      // Clerk users use Clerk token; only use partner token if not signed in via Clerk
+      const token = isSignedIn ? (await getToken()) : partnerToken;
       if (!token) throw new Error("Could not retrieve auth token.");
 
       const res = await fetchWithAuth(`/v1/policies/${policyId}`, token);
@@ -103,7 +109,8 @@ export default function PolicyDetailsPage() {
   async function download(format: "json" | "csv" | "xlsx") {
     setError("");
     try {
-      const token = partnerToken ?? (await getToken());
+      // Clerk users use Clerk token; only use partner token if not signed in via Clerk
+      const token = isSignedIn ? (await getToken()) : partnerToken;
       if (!token) throw new Error("Could not retrieve auth token.");
       if (!policyId) throw new Error("Missing policyId.");
 
@@ -181,7 +188,7 @@ export default function PolicyDetailsPage() {
             <div>
               <div className="flex items-center gap-2 text-sm text-slate-500">
                 <Link href="/policies" className="text-blue-600 hover:text-blue-700">
-                  My Policies
+                  {isEmployeeRole(role) ? "All Policies" : "My Policies"}
                 </Link>
                 <span>/</span>
                 <span>Details</span>

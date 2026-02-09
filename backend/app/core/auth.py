@@ -1,4 +1,5 @@
-from typing import Optional
+from typing import Optional, Union
+from dataclasses import dataclass
 import logging
 import requests
 from jose import jwk, jwt, JWTError
@@ -144,3 +145,58 @@ async def get_current_posp_application_id(
         raise HTTPException(status_code=401, detail="Missing Authorization Bearer token")
     token = authorization.split(" ", 1)[1].strip()
     return _verify_partner_jwt(token)
+
+
+@dataclass
+class PolicyAccess:
+    """Represents who is accessing policies - either an employee (User) or a partner (posp_application_id)."""
+    user: Optional[User] = None
+    posp_application_id: Optional[str] = None
+
+    @property
+    def is_employee(self) -> bool:
+        return self.user is not None and self.user.role in Role.employee_roles()
+
+    @property
+    def is_partner(self) -> bool:
+        return self.posp_application_id is not None
+
+
+async def get_policy_access(
+    authorization: Optional[str] = Header(default=None),
+    db: Session = Depends(get_db),
+) -> PolicyAccess:
+    """
+    Flexible auth dependency for policies that handles both:
+    - Clerk tokens (for employees viewing all policies)
+    - Partner tokens (for partners viewing their own policies)
+    
+    First tries Clerk, then partner JWT.
+    """
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Missing Authorization Bearer token")
+
+    token = authorization.split(" ", 1)[1].strip()
+
+    # Try Clerk token first (for employees)
+    try:
+        user_id = _verify_clerk_jwt(token)
+        user = _ensure_user_record(user_id, db)
+        # Check if user has employee role - they can see all policies
+        if user.role in Role.employee_roles():
+            return PolicyAccess(user=user)
+        # Non-employee Clerk users (customers) shouldn't see policies via this route
+        # They would need their own policy purchase flow in the future
+        raise HTTPException(status_code=403, detail="Customers cannot access partner policies")
+    except HTTPException as clerk_exc:
+        # If it's not a Clerk token or user doesn't have access, try partner token
+        if clerk_exc.status_code == 403:
+            raise  # Re-raise permission errors immediately
+        pass  # Continue to try partner token
+
+    # Try partner token
+    try:
+        posp_application_id = _verify_partner_jwt(token)
+        return PolicyAccess(posp_application_id=posp_application_id)
+    except HTTPException as partner_exc:
+        raise HTTPException(status_code=401, detail="Invalid token") from partner_exc

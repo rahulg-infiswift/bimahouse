@@ -10,7 +10,7 @@ from redis import Redis
 from rq import Queue, Retry
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_posp_application_id
+from app.core.auth import get_current_posp_application_id, PolicyAccess, get_policy_access
 from app.core.config import settings
 from app.core.db import get_db
 from app.policies.models import Job, Policy, JobStatus
@@ -79,8 +79,26 @@ async def extract_policy(
     return {"job_id": str(job.id), "policy_id": str(policy.id)}
 
 
-def _apply_policy_scope(query, posp_application: PospApplication):
-    return query.filter(Policy.posp_application_id == posp_application.id)
+def _apply_policy_scope(query, access: PolicyAccess, db: Session):
+    """Apply policy scoping based on who is accessing.
+    
+    - Employees see ALL policies
+    - Partners see only their own policies
+    """
+    if access.is_employee:
+        # Employees can see all policies
+        return query
+    if access.is_partner:
+        # Partners only see their own policies
+        posp_application = db.query(PospApplication).filter(
+            PospApplication.id == access.posp_application_id
+        ).first()
+        if not posp_application:
+            raise HTTPException(status_code=401, detail="Invalid partner session")
+        if posp_application.status != "approved":
+            raise HTTPException(status_code=403, detail="Partner account is not approved")
+        return query.filter(Policy.posp_application_id == posp_application.id)
+    raise HTTPException(status_code=403, detail="Access denied")
 
 
 @router.get("/v1/jobs/{job_id}")
@@ -105,10 +123,10 @@ def get_job(job_id: uuid.UUID, posp_application: PospApplication = Depends(_get_
 def list_policies(
     start_date: Optional[date] = Query(default=None, description="Filter policies created on or after this date (YYYY-MM-DD)"),
     end_date: Optional[date] = Query(default=None, description="Filter policies created on or before this date (YYYY-MM-DD)"),
-    posp_application: PospApplication = Depends(_get_current_approved_posp_application),
+    access: PolicyAccess = Depends(get_policy_access),
     db: Session = Depends(get_db),
 ):
-    q = _apply_policy_scope(db.query(Policy), posp_application)
+    q = _apply_policy_scope(db.query(Policy), access, db)
     
     if start_date:
         start_datetime = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
@@ -138,11 +156,11 @@ def list_policies(
 def download_policies_bulk(
     start_date: Optional[date] = Query(default=None, description="Filter policies created on or after this date (YYYY-MM-DD)"),
     end_date: Optional[date] = Query(default=None, description="Filter policies created on or before this date (YYYY-MM-DD)"),
-    posp_application: PospApplication = Depends(_get_current_approved_posp_application),
+    access: PolicyAccess = Depends(get_policy_access),
     db: Session = Depends(get_db),
 ):
     """Download all policies with extracted data as a single Excel file (one row per policy)."""
-    q = _apply_policy_scope(db.query(Policy), posp_application).filter(Policy.extracted_json.isnot(None))
+    q = _apply_policy_scope(db.query(Policy), access, db).filter(Policy.extracted_json.isnot(None))
     
     if start_date:
         start_datetime = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
@@ -185,8 +203,8 @@ def download_policies_bulk(
 
 
 @router.get("/v1/policies/{policy_id}")
-def get_policy(policy_id: uuid.UUID, posp_application: PospApplication = Depends(_get_current_approved_posp_application), db: Session = Depends(get_db)):
-    q = _apply_policy_scope(db.query(Policy).filter(Policy.id == policy_id), posp_application)
+def get_policy(policy_id: uuid.UUID, access: PolicyAccess = Depends(get_policy_access), db: Session = Depends(get_db)):
+    q = _apply_policy_scope(db.query(Policy).filter(Policy.id == policy_id), access, db)
     policy = q.first()
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
@@ -204,10 +222,10 @@ def get_policy(policy_id: uuid.UUID, posp_application: PospApplication = Depends
 def download_policy(
     policy_id: uuid.UUID,
     format: str = Query(default="json", pattern="^(json|csv|xlsx)$"),
-    posp_application: PospApplication = Depends(_get_current_approved_posp_application),
+    access: PolicyAccess = Depends(get_policy_access),
     db: Session = Depends(get_db),
 ):
-    q = _apply_policy_scope(db.query(Policy).filter(Policy.id == policy_id), posp_application)
+    q = _apply_policy_scope(db.query(Policy).filter(Policy.id == policy_id), access, db)
     policy = q.first()
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")

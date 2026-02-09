@@ -4,6 +4,7 @@ import { UserRole } from "./lib/roles";
 import LoggedOutHome from "./components/LoggedOutHome";
 import CustomerHome from "./components/CustomerHome";
 import PartnerDashboard from "./components/PartnerDashboard";
+import EmployeeHome from "./components/EmployeeHome";
 import HomePageWrapper from "./components/HomePageWrapper";
 
 async function getUserRole(): Promise<UserRole | null> {
@@ -36,6 +37,7 @@ export default async function HomePage() {
       LoggedOutHome={<LoggedOutHome />}
       CustomerHome={<CustomerHome />}
       PartnerDashboard={<PartnerDashboard />}
+      EmployeeHome={<EmployeeHome role={role} />}
     />
   );
 }

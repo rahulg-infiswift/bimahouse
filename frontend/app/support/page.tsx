@@ -40,27 +40,32 @@ export default function SupportPage() {
         setRole(null);
         return;
       }
+      // Clerk users (including employees) use Clerk token to fetch their role
+      if (isSignedIn) {
+        const token = await getToken();
+        if (!token) return;
+        const nextRole = await fetchUserRole(apiBase, token);
+        if (!active) return;
+        setRole(nextRole);
+        try {
+          const res = await fetch(`${apiBase}/v1/users/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          });
+          if (res.ok) {
+            const data = (await res.json()) as { primary_email?: string };
+            setUserEmail(data.primary_email ?? "");
+          }
+        } catch {
+          // ignore
+        }
+        return;
+      }
+      // Only use partner token if not signed in via Clerk
       if (partnerToken) {
         if (active) setRole("partner");
         setUserEmail("");
         return;
-      }
-      const token = partnerToken ?? (await getToken());
-      if (!token) return;
-      const nextRole = await fetchUserRole(apiBase, token);
-      if (!active) return;
-      setRole(nextRole);
-      try {
-        const res = await fetch(`${apiBase}/v1/users/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: "no-store",
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { primary_email?: string };
-          setUserEmail(data.primary_email ?? "");
-        }
-      } catch {
-        // ignore
       }
     }
     void loadRole();
