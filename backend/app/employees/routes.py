@@ -83,6 +83,7 @@ def _issue_employee_token(employee: Employee) -> tuple[str, int]:
 def _employee_to_out(employee: Employee) -> EmployeeOut:
     return EmployeeOut(
         employee_id=str(employee.id),
+        full_name=employee.full_name,
         primary_email=employee.primary_email,
         phone=f"{employee.phone_country_code}{employee.phone_national_number}",
         role=employee.role,
@@ -137,6 +138,7 @@ def create_employee(
         raise HTTPException(status_code=409, detail="Phone number is already mapped to another employee account")
 
     employee = Employee(
+        full_name=payload.full_name.strip(),
         primary_email=payload.primary_email,
         role=payload.role,
         phone_country_code=country_code,
@@ -297,5 +299,6 @@ def verify_employee_login_otp(
         expires_in=expires_in,
         role=employee.role,
         employee_id=str(employee.id),
+        full_name=employee.full_name,
         primary_email=employee.primary_email,
     )
