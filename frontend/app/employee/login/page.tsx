@@ -9,8 +9,8 @@ import CountryCodeSelect from "../../components/CountryCodeSelect";
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 const COUNTRY_OPTIONS = [
-  { code: "+91", label: "India (+91)", shortLabel: "🇮🇳 +91", digits: 10 },
-  { code: "+1", label: "United States (+1)", shortLabel: "🇺🇸 +1", digits: 10 },
+  { code: "+91", label: "India (+91)", shortLabel: "+91", digits: 10 },
+  { code: "+1", label: "United States (+1)", shortLabel: "+1", digits: 10 },
 ] as const;
 
 export default function EmployeeLoginPage() {
@@ -113,7 +113,7 @@ export default function EmployeeLoginPage() {
   return (
     <main className="min-h-[calc(100vh-12rem)] px-4 py-12 sm:px-6">
       <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[1.1fr_420px]">
-        <section className="hidden rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/30 p-8 text-[#0B1F3B] shadow-sm sm:p-10 lg:block">
+        <section className="hidden rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/30 p-8 text-heading shadow-sm sm:p-10 lg:block">
           <span className="inline-flex items-center rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
             Internal Access
           </span>
@@ -148,12 +148,12 @@ export default function EmployeeLoginPage() {
           <span className="inline-flex items-center rounded-sm bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#0B5CAD]">
             Employee Sign In
           </span>
-          <h2 className="mt-2 text-xl font-semibold text-[#0B1F3B]">Sign In</h2>
+          <h2 className="mt-2 text-xl font-semibold text-heading">Sign In</h2>
           <p className="mt-1 text-sm text-slate-500">Use your registered employee mobile number.</p>
           <form onSubmit={otpRequested ? verifyOtp : requestOtp} className="mt-5">
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Registered Phone Number</span>
-            <div className="mt-2 grid grid-cols-[102px_1fr] gap-2">
+            <div className="mt-2 grid grid-cols-[84px_1fr] gap-2">
               <CountryCodeSelect
                 options={COUNTRY_OPTIONS}
                 value={countryCode}

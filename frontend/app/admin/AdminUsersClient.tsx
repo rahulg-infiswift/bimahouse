@@ -163,7 +163,7 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
     return (
       <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
         <div className="rounded-sm border border-slate-200 bg-white p-8 shadow-sm">
-          <h1 className="text-2xl font-semibold text-[#0B1F3B]">Manage Users</h1>
+          <h1 className="text-2xl font-semibold text-heading">Manage Users</h1>
           <p className="mt-3 text-sm text-slate-600">Please sign in to manage user access.</p>
         </div>
       </section>
@@ -193,7 +193,7 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
                 <ShieldUser className="h-3.5 w-3.5" />
                 Admin Console
               </span>
-              <h1 className="mt-4 text-3xl font-semibold text-[#0B1F3B]">Manage Users</h1>
+              <h1 className="mt-4 text-3xl font-semibold text-heading">Manage Users</h1>
               <p className="mt-2 text-sm text-slate-600">
                 Assign roles for customer accounts.
               </p>

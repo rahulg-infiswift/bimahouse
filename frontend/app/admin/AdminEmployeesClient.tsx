@@ -5,9 +5,14 @@ import { useAuth } from "@clerk/nextjs";
 import { UserRole, isAdminRole } from "../lib/roles";
 import { useEmployeeSession } from "../lib/use-employee-session";
 import { AlertCircle, CheckCircle2, Plus, RefreshCw, Search, ShieldUser, Users, X } from "lucide-react";
+import CountryCodeSelect from "../components/CountryCodeSelect";
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 const EMPLOYEE_ROLE_OPTIONS: UserRole[] = ["sales", "arm_rm", "manager", "area_manager", "zonal_head", "admin"];
+const PHONE_COUNTRY_OPTIONS = [
+  { code: "+91", label: "India (+91)", shortLabel: "+91" },
+  { code: "+1", label: "United States (+1)", shortLabel: "+1" },
+] as const;
 
 type EmployeeOut = {
   employee_id: string;
@@ -47,7 +52,8 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
   const [newEmployee, setNewEmployee] = useState({
     fullName: "",
     primaryEmail: "",
-    phone: "",
+    phoneNational: "",
+    phoneCountryCode: "+91" as (typeof PHONE_COUNTRY_OPTIONS)[number]["code"],
     role: "sales" as UserRole,
   });
 
@@ -170,15 +176,16 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
     setNotice(null);
 
     const fullName = newEmployee.fullName.trim();
-    const phone = newEmployee.phone.trim();
+    const phoneNational = newEmployee.phoneNational.replace(/\D/g, "");
     if (!fullName) {
       setError("Full name is required.");
       return;
     }
-    if (!phone) {
-      setError("Phone is required.");
+    if (phoneNational.length !== 10) {
+      setError("Phone must be a valid 10-digit number.");
       return;
     }
+    const phone = `${newEmployee.phoneCountryCode}${phoneNational}`;
 
     setCreating(true);
     try {
@@ -204,7 +211,7 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
       const created = (await res.json()) as EmployeeOut;
       setEmployees((prev) => [created, ...prev]);
       setRoleEdits((prev) => ({ ...prev, [created.employee_id]: created.role }));
-      setNewEmployee({ fullName: "", primaryEmail: "", phone: "", role: "sales" });
+      setNewEmployee({ fullName: "", primaryEmail: "", phoneNational: "", phoneCountryCode: "+91", role: "sales" });
       setShowCreateForm(false);
       setNotice("Employee added.");
     } catch (err) {
@@ -225,7 +232,7 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
     return (
       <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
         <div className="rounded-sm border border-slate-200 bg-white p-8 shadow-sm">
-          <h1 className="text-2xl font-semibold text-[#0B1F3B]">Manage Employees</h1>
+          <h1 className="text-2xl font-semibold text-heading">Manage Employees</h1>
           <p className="mt-3 text-sm text-slate-600">Please sign in to manage employee access.</p>
         </div>
       </section>
@@ -252,60 +259,17 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
             Admin Console
           </span>
           <div className="mt-4 flex items-center justify-between gap-3">
-            <h1 className="text-3xl font-semibold text-[#0B1F3B]">Manage Employees</h1>
+            <h1 className="text-3xl font-semibold text-heading">Manage Employees</h1>
             <button
               type="button"
-              onClick={() => setShowCreateForm((prev) => !prev)}
+              onClick={() => setShowCreateForm(true)}
               className="inline-flex items-center gap-1.5 rounded-sm bg-[#0B5CAD] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-[#0A4F95]"
             >
-              {showCreateForm ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-              {showCreateForm ? "Close Form" : "Add Employee"}
+              <Plus className="h-3.5 w-3.5" />
+              Add Employee
             </button>
           </div>
           <p className="mt-2 text-sm text-slate-600">Manage internal employee roles and access.</p>
-
-          {showCreateForm && (
-            <form onSubmit={createEmployee} className="mt-4 grid gap-3 rounded-sm border border-slate-200 bg-white p-4 sm:grid-cols-2">
-              <input
-                value={newEmployee.fullName}
-                onChange={(e) => setNewEmployee((prev) => ({ ...prev, fullName: e.target.value }))}
-                placeholder="Full name"
-                className="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
-              />
-              <input
-                value={newEmployee.phone}
-                onChange={(e) => setNewEmployee((prev) => ({ ...prev, phone: e.target.value }))}
-                placeholder="Phone (+1... or +91...)"
-                className="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
-              />
-              <input
-                value={newEmployee.primaryEmail}
-                onChange={(e) => setNewEmployee((prev) => ({ ...prev, primaryEmail: e.target.value }))}
-                placeholder="Primary email (optional)"
-                className="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
-              />
-              <select
-                value={newEmployee.role}
-                onChange={(e) => setNewEmployee((prev) => ({ ...prev, role: e.target.value as UserRole }))}
-                className="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
-              >
-                {EMPLOYEE_ROLE_OPTIONS.map((role) => (
-                  <option key={role} value={role}>
-                    {role.replace("_", " ")}
-                  </option>
-                ))}
-              </select>
-              <div className="sm:col-span-2 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="rounded-sm bg-[#0B5CAD] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-[#0A4F95] disabled:opacity-60"
-                >
-                  {creating ? "Adding..." : "Create Employee"}
-                </button>
-              </div>
-            </form>
-          )}
 
           <div className="mt-6">
             <label className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -365,7 +329,7 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
                 {visibleEmployees.map((employee) => (
                   <tr key={employee.employee_id} className="hover:bg-blue-50/40">
                     <td className="px-4 py-4">
-                      <div className="font-semibold text-[#0B1F3B]">{employee.full_name?.trim() || "Unnamed Employee"}</div>
+                      <div className="font-semibold text-heading">{employee.full_name?.trim() || "Unnamed Employee"}</div>
                       <div className="text-xs text-slate-500">{employee.primary_email ?? "No email"}</div>
                     </td>
                     <td className="px-4 py-4 text-slate-700">{employee.phone}</td>
@@ -407,6 +371,93 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
         <div className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-sm border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 shadow-lg">
           <CheckCircle2 className="h-4 w-4" />
           {notice}
+        </div>
+      )}
+
+      {showCreateForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/35 p-4"
+          onClick={() => setShowCreateForm(false)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-sm border border-slate-200 bg-white p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-heading">Add Employee</h2>
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form onSubmit={createEmployee} className="grid gap-3 sm:grid-cols-2">
+              <input
+                value={newEmployee.fullName}
+                onChange={(e) => setNewEmployee((prev) => ({ ...prev, fullName: e.target.value }))}
+                placeholder="Full name"
+                className="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+              <div className="sm:col-span-2 flex items-stretch gap-2">
+                <div className="w-24 shrink-0">
+                  <CountryCodeSelect
+                    options={PHONE_COUNTRY_OPTIONS}
+                    value={newEmployee.phoneCountryCode}
+                    onChange={(next) =>
+                      setNewEmployee((prev) => ({
+                        ...prev,
+                        phoneCountryCode: next as (typeof PHONE_COUNTRY_OPTIONS)[number]["code"],
+                      }))
+                    }
+                  />
+                </div>
+                <input
+                  value={newEmployee.phoneNational}
+                  onChange={(e) =>
+                    setNewEmployee((prev) => ({ ...prev, phoneNational: e.target.value.replace(/\D/g, "").slice(0, 10) }))
+                  }
+                  placeholder="10-digit phone number"
+                  className="min-w-0 flex-1 rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+              <input
+                value={newEmployee.primaryEmail}
+                onChange={(e) => setNewEmployee((prev) => ({ ...prev, primaryEmail: e.target.value }))}
+                placeholder="Primary email (optional)"
+                className="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+              <select
+                value={newEmployee.role}
+                onChange={(e) => setNewEmployee((prev) => ({ ...prev, role: e.target.value as UserRole }))}
+                className="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
+              >
+                {EMPLOYEE_ROLE_OPTIONS.map((role) => (
+                  <option key={role} value={role}>
+                    {role.replace("_", " ")}
+                  </option>
+                ))}
+              </select>
+              <div className="sm:col-span-2 mt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(false)}
+                  className="rounded-sm border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="rounded-sm bg-[#0B5CAD] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-[#0A4F95] disabled:opacity-60"
+                >
+                  {creating ? "Adding..." : "Create Employee"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </section>

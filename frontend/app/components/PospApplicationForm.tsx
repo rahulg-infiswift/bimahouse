@@ -81,7 +81,7 @@ export default function PospApplicationForm({
   return (
     <div className={wrap}>
       <div>
-        <h3 className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#0B1F3B]">
+        <h3 className="mb-3 inline-flex items-center gap-2 text-base font-semibold text-heading">
           <Building2 className="h-4 w-4 text-[#0B5CAD]" />
           Professional Details
         </h3>
@@ -134,7 +134,7 @@ export default function PospApplicationForm({
       </div>
 
       <div>
-        <h3 className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#0B1F3B]">
+        <h3 className="mb-3 inline-flex items-center gap-2 text-base font-semibold text-heading">
           <UserRound className="h-4 w-4 text-[#0B5CAD]" />
           Personal Details
         </h3>
@@ -235,7 +235,7 @@ export default function PospApplicationForm({
       </div>
 
       <div>
-        <h3 className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#0B1F3B]">
+        <h3 className="mb-3 inline-flex items-center gap-2 text-base font-semibold text-heading">
           <FileBadge2 className="h-4 w-4 text-[#0B5CAD]" />
           Identity Documents
         </h3>
@@ -270,7 +270,7 @@ export default function PospApplicationForm({
       </div>
 
       <div>
-        <h3 className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#0B1F3B]">
+        <h3 className="mb-3 inline-flex items-center gap-2 text-base font-semibold text-heading">
           <CreditCard className="h-4 w-4 text-[#0B5CAD]" />
           Bank Details
         </h3>

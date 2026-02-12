@@ -172,14 +172,14 @@ export default function BecomePartnerPage() {
             <Briefcase className="h-3.5 w-3.5" />
             Partner Network
           </span>
-          <h1 className="mt-4 text-3xl font-semibold text-[#0B1F3B]">Become a Bima House Partner</h1>
+          <h1 className="mt-4 text-3xl font-semibold text-heading">Become a Bima House Partner</h1>
           <p className="mt-2 max-w-3xl text-sm text-slate-600">
             Join our partner network and grow your insurance business with structured onboarding, product support, and claims assistance.
           </p>
         </div>
 
         <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-[#0B1F3B]">POSP Application Form</h2>
+          <h2 className="text-xl font-semibold text-heading">POSP Application Form</h2>
           <p className="mt-1 text-sm text-slate-600">Fill the form below and submit your application.</p>
           <div className="mt-4 rounded-sm border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-900">
             <span className="inline-flex items-center gap-2 font-medium">
@@ -233,7 +233,7 @@ export default function BecomePartnerPage() {
             </div>
 
             <div className="sm:col-span-2 rounded-sm border border-slate-200 bg-slate-50/60 p-4">
-              <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[#0B1F3B]">
+              <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-heading">
                 <FileUp className="h-4 w-4 text-[#0B5CAD]" />
                 Document Attachments
               </h3>
