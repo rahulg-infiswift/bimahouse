@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { fetchUserRole, isEmployeeRole, UserRole } from "../lib/roles";
+import { useEmployeeSession } from "../lib/use-employee-session";
 
 type LeadSummary = {
   submitted: number;
@@ -39,6 +40,7 @@ const statusConfig: Record<string, { bg: string; text: string; icon: string }> =
 
 export default function AdminLeadsPage() {
   const { getToken, isSignedIn } = useAuth();
+  const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
 
   const [role, setRole] = useState<UserRole | null>(null);
   const [summary, setSummary] = useState<LeadSummary | null>(null);
@@ -53,13 +55,18 @@ export default function AdminLeadsPage() {
   const [busyLead, setBusyLead] = useState<string | null>(null);
 
   async function authHeaders() {
-    const token = await getToken();
+    const token = employeeToken ?? (await getToken());
     return { Authorization: `Bearer ${token}` };
   }
 
   useEffect(() => {
     let active = true;
     async function loadRole() {
+      if (!employeeReady) return;
+      if (employeeToken && employeeInfo?.role) {
+        if (active) setRole(employeeInfo.role as UserRole);
+        return;
+      }
       if (!isSignedIn) {
         setRole(null);
         return;
@@ -73,10 +80,11 @@ export default function AdminLeadsPage() {
     return () => {
       active = false;
     };
-  }, [getToken, isSignedIn]);
+  }, [employeeInfo?.role, employeeReady, employeeToken, getToken, isSignedIn]);
 
   async function load() {
-    if (!isSignedIn) {
+    const hasSession = isSignedIn || Boolean(employeeToken);
+    if (!hasSession) {
       setLoading(false);
       return;
     }
@@ -90,8 +98,8 @@ export default function AdminLeadsPage() {
       const headers = await authHeaders();
 
       const [s, l] = await Promise.all([
-        fetch(`${API}/v1/leads/summary`, { headers }),
-        fetch(`${API}/v1/leads`, { headers }),
+        fetch(`${API}/v1/posp-applications/summary`, { headers }),
+        fetch(`${API}/v1/posp-applications`, { headers }),
       ]);
 
       if (!s.ok) throw new Error(`Summary failed: ${s.status} ${await s.text()}`);
@@ -109,7 +117,7 @@ export default function AdminLeadsPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn, role]);
+  }, [employeeToken, isSignedIn, role]);
 
   const statusCounts = useMemo(() => {
     const submitted = summary?.submitted ?? 0;
@@ -150,7 +158,7 @@ export default function AdminLeadsPage() {
     setBusyLead(leadId);
     try {
       const headers = await authHeaders();
-      const resp = await fetch(`${API}/v1/leads/${leadId}/send-otp`, {
+      const resp = await fetch(`${API}/v1/posp-applications/${leadId}/send-otp`, {
         method: "POST",
         headers,
       });
@@ -176,7 +184,7 @@ export default function AdminLeadsPage() {
         "Content-Type": "application/json",
       };
 
-      const resp = await fetch(`${API}/v1/leads/${leadId}/verify-otp`, {
+      const resp = await fetch(`${API}/v1/posp-applications/${leadId}/verify-otp`, {
         method: "POST",
         headers,
         body: JSON.stringify({ otp }),
@@ -194,7 +202,8 @@ export default function AdminLeadsPage() {
     }
   }
 
-  if (!isSignedIn) {
+  const hasSession = isSignedIn || Boolean(employeeToken);
+  if (!hasSession) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { fetchUserRole, isEmployeeRole, UserRole } from "../../lib/roles";
+import { useEmployeeSession } from "../../lib/use-employee-session";
 import PospApplicationForm, {
   emptyPospApplicationFields,
   PospApplicationFields,
@@ -66,6 +67,7 @@ export default function AdminLeadDetailPage() {
   const router = useRouter();
   const leadId = params?.leadId || "";
   const { getToken, isSignedIn } = useAuth();
+  const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
 
   const [role, setRole] = useState<UserRole | null>(null);
   const [data, setData] = useState<LeadDetail | null>(null);
@@ -82,13 +84,18 @@ export default function AdminLeadDetailPage() {
   }
 
   async function authHeaders() {
-    const token = await getToken();
+    const token = employeeToken ?? (await getToken());
     return { Authorization: `Bearer ${token}` };
   }
 
   useEffect(() => {
     let active = true;
     async function loadRole() {
+      if (!employeeReady) return;
+      if (employeeToken && employeeInfo?.role) {
+        if (active) setRole(employeeInfo.role as UserRole);
+        return;
+      }
       if (!isSignedIn) {
         setRole(null);
         return;
@@ -102,17 +109,17 @@ export default function AdminLeadDetailPage() {
     return () => {
       active = false;
     };
-  }, [getToken, isSignedIn]);
+  }, [employeeInfo?.role, employeeReady, employeeToken, getToken, isSignedIn]);
 
   async function load() {
     if (!leadId) return;
-    if (!isSignedIn) return;
+    if (!isSignedIn && !employeeToken) return;
     if (role && !isEmployeeRole(role)) return;
     setLoading(true);
     setErr(null);
     setOk(null);
     try {
-      const resp = await fetch(`${API}/v1/leads/${leadId}`, {
+      const resp = await fetch(`${API}/v1/posp-applications/${leadId}`, {
         headers: await authHeaders(),
       });
       if (!resp.ok) throw new Error(`Load failed: ${resp.status} ${await resp.text()}`);
@@ -149,7 +156,7 @@ export default function AdminLeadDetailPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leadId, isSignedIn, role]);
+  }, [employeeToken, leadId, isSignedIn, role]);
 
   const docsByType = useMemo(() => {
     const m: Record<string, number> = {};
@@ -164,7 +171,7 @@ export default function AdminLeadDetailPage() {
     setErr(null);
     setOk(null);
     try {
-      const resp = await fetch(`${API}/v1/leads/${leadId}`, {
+      const resp = await fetch(`${API}/v1/posp-applications/${leadId}`, {
         method: "PATCH",
         headers: { ...(await authHeaders()), "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -192,9 +199,9 @@ export default function AdminLeadDetailPage() {
       form.append("file", file);
 
       // Backend endpoint expected:
-      // POST /v1/leads/{application_id}/documents?doc_type=...
+      // POST /v1/posp-applications/{application_id}/documents?doc_type=...
       const resp = await fetch(
-        `${API}/v1/leads/${leadId}/documents?doc_type=${encodeURIComponent(docType)}`,
+        `${API}/v1/posp-applications/${leadId}/documents?doc_type=${encodeURIComponent(docType)}`,
         {
           method: "POST",
           headers: await authHeaders(),
@@ -212,7 +219,7 @@ export default function AdminLeadDetailPage() {
     }
   }
 
-  if (!isSignedIn) {
+  if (!isSignedIn && !employeeToken) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

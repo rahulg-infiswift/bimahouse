@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { UserRole, isAdminRole } from "../lib/roles";
+import { useEmployeeSession } from "../lib/use-employee-session";
 
 interface EmployeeHomeProps {
   role: UserRole | null;
@@ -10,8 +11,11 @@ interface EmployeeHomeProps {
 
 export default function EmployeeHome({ role }: EmployeeHomeProps) {
   const { user } = useUser();
-  const firstName = user?.firstName || "Team Member";
-  const showAdminLink = isAdminRole(role);
+  const { employeeInfo } = useEmployeeSession();
+  const emailName = employeeInfo?.primary_email?.split("@")[0];
+  const firstName = user?.firstName || emailName || "Team Member";
+  const effectiveRole = role ?? ((employeeInfo?.role as UserRole | undefined) ?? null);
+  const showAdminLink = isAdminRole(effectiveRole);
 
   // Format role for display
   const getRoleDisplayName = (role: UserRole | null) => {
@@ -36,7 +40,7 @@ export default function EmployeeHome({ role }: EmployeeHomeProps) {
             Welcome back, <span className="text-indigo-600">{firstName}</span>!
           </h1>
           <p className="text-slate-600 mt-1">
-            {getRoleDisplayName(role)} Dashboard
+            {getRoleDisplayName(effectiveRole)} Dashboard
           </p>
         </div>
 

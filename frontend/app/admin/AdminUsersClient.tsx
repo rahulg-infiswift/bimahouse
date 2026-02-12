@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { ROLE_OPTIONS, UserRole, isAdminRole, isEmployeeRole } from "../lib/roles";
+import { UserRole, isAdminRole } from "../lib/roles";
+import { useEmployeeSession } from "../lib/use-employee-session";
+import Link from "next/link";
 
 type UserOut = {
   user_id: string;
@@ -18,6 +20,7 @@ type AdminUsersClientProps = {
 };
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const USER_ROLE_OPTIONS: UserRole[] = ["customer"];
 
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -27,13 +30,12 @@ function formatDate(value: string): string {
 
 function roleTypeLabel(role: UserRole): string {
   if (role === "partner") return "Partner";
-  if (role === "customer") return "Customer";
-  if (isEmployeeRole(role)) return "Employee";
-  return "Unknown";
+  return "Customer";
 }
 
 export default function AdminUsersClient({ initialRole }: AdminUsersClientProps) {
   const { getToken, isSignedIn } = useAuth();
+  const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
   const [currentRole, setCurrentRole] = useState<UserRole | null>(initialRole ?? null);
   const [users, setUsers] = useState<UserOut[]>([]);
   const [query, setQuery] = useState("");
@@ -42,16 +44,21 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [roleEdits, setRoleEdits] = useState<Record<string, UserRole>>({});
   const [notice, setNotice] = useState<string | null>(null);
-  const [activeType, setActiveType] = useState<"all" | "employee" | "partner" | "customer">("all");
+  const [activeType, setActiveType] = useState<"all" | "partner" | "customer">("all");
 
   useEffect(() => {
     let active = true;
     async function fetchRole() {
+      if (!employeeReady) return;
+      if (employeeToken && employeeInfo?.role) {
+        if (active) setCurrentRole(employeeInfo.role as UserRole);
+        return;
+      }
       if (!isSignedIn) {
         setCurrentRole(null);
         return;
       }
-      const token = await getToken();
+      const token = await getAuthToken();
       if (!token) return;
       const res = await fetch(`${apiBase}/v1/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -65,14 +72,19 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
     return () => {
       active = false;
     };
-  }, [getToken, isSignedIn]);
+  }, [employeeInfo?.role, employeeReady, employeeToken, getAuthToken, isSignedIn]);
 
-  async function loadUsers() {
+  const getAuthToken = useCallback(async (): Promise<string | null> => {
+    if (employeeToken) return employeeToken;
+    return getToken();
+  }, [employeeToken, getToken]);
+
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     setNotice(null);
     try {
-      const token = await getToken();
+      const token = await getAuthToken();
       if (!token) throw new Error("Missing auth token.");
       const res = await fetch(`${apiBase}/v1/admin/users?limit=200`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -95,13 +107,13 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
     } finally {
       setLoading(false);
     }
-  }
+  }, [getAuthToken]);
 
   useEffect(() => {
     if (isAdminRole(currentRole)) {
       loadUsers();
     }
-  }, [currentRole]);
+  }, [currentRole, loadUsers]);
 
   const filteredUsers = useMemo(() => {
     if (!query.trim()) return users;
@@ -115,16 +127,14 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
   const visibleUsers = useMemo(() => {
     if (activeType === "all") return filteredUsers;
     if (activeType === "partner") return filteredUsers.filter((user) => user.role === "partner");
-    if (activeType === "customer") return filteredUsers.filter((user) => user.role === "customer");
-    return filteredUsers.filter((user) => isEmployeeRole(user.role));
+    return filteredUsers.filter((user) => user.role === "customer");
   }, [activeType, filteredUsers]);
 
   const stats = useMemo(() => {
     const total = users.length;
     const partners = users.filter((user) => user.role === "partner").length;
     const customers = users.filter((user) => user.role === "customer").length;
-    const employees = users.filter((user) => isEmployeeRole(user.role)).length;
-    return { total, partners, customers, employees };
+    return { total, partners, customers };
   }, [users]);
 
   async function updateUserRole(userId: string) {
@@ -134,7 +144,7 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
     setError(null);
     setNotice(null);
     try {
-      const token = await getToken();
+      const token = await getAuthToken();
       if (!token) throw new Error("Missing auth token.");
       const res = await fetch(`${apiBase}/v1/admin/users/${userId}/role`, {
         method: "PATCH",
@@ -165,7 +175,8 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
-  if (!isSignedIn) {
+  const hasSession = isSignedIn || Boolean(employeeToken);
+  if (!hasSession) {
     return (
       <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -200,8 +211,13 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
               </span>
               <h1 className="mt-4 text-3xl font-semibold text-slate-900">Manage Users</h1>
               <p className="mt-2 text-sm text-slate-600">
-                Assign roles, review access, and keep partner onboarding organized.
+                Assign roles for customer accounts.
               </p>
+              <div className="mt-3">
+                <Link href="/admin/employees" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+                  Go to employee management
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -218,7 +234,7 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {(["all", "employee", "partner", "customer"] as const).map((type) => (
+              {(["all", "partner", "customer"] as const).map((type) => (
                 <button
                   key={type}
                   type="button"
@@ -231,8 +247,6 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
                 >
                   {type === "all"
                     ? `All (${stats.total})`
-                    : type === "employee"
-                    ? `Employees (${stats.employees})`
                     : type === "partner"
                     ? `Partners (${stats.partners})`
                     : `Customers (${stats.customers})`}
@@ -329,7 +343,7 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
                         }
                         className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                       >
-                        {ROLE_OPTIONS.map((role) => (
+                        {USER_ROLE_OPTIONS.map((role) => (
                           <option key={role} value={role}>
                             {role.replace("_", " ")}
                           </option>

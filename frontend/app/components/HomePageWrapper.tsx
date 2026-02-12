@@ -1,7 +1,8 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import { usePartnerSession } from "../lib/use-partner-session";
+import { useEmployeeSession } from "../lib/use-employee-session";
 import { UserRole, isEmployeeRole } from "../lib/roles";
 
 interface HomePageWrapperProps {
@@ -22,14 +23,10 @@ export default function HomePageWrapper({
   EmployeeHome,
 }: HomePageWrapperProps) {
   const { partnerToken, partnerReady } = usePartnerSession();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const { employeeToken, employeeReady } = useEmployeeSession();
 
   // Wait until client is mounted to check partner token
-  if (!mounted || !partnerReady) {
+  if (!partnerReady || !employeeReady) {
     // Show loading or the server-rendered content temporarily
     // For SSR, show based on Clerk auth only
     if (clerkUserId) {
@@ -45,6 +42,10 @@ export default function HomePageWrapper({
   }
 
   // Partner logged in via OTP (localStorage token)
+  if (employeeToken) {
+    return <>{EmployeeHome}</>;
+  }
+
   if (partnerToken) {
     return <>{PartnerDashboard}</>;
   }

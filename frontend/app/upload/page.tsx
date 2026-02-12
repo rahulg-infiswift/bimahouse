@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { canAccessPolicies, fetchUserRole, UserRole } from "../lib/roles";
 import { usePartnerSession } from "../lib/use-partner-session";
+import { useEmployeeSession } from "../lib/use-employee-session";
 
 type ExtractResponse = { job_id: string; policy_id: string };
 type JobStatusResp = {
@@ -25,6 +26,7 @@ async function sleep(ms: number) {
 
 export default function UploadPage() {
   const { getToken, isSignedIn } = useAuth();
+  const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
   const apiBase = useMemo(
     () => process.env.NEXT_PUBLIC_API_BASE_URL || API_BASE_DEFAULT,
     []
@@ -53,7 +55,11 @@ export default function UploadPage() {
   useEffect(() => {
     let active = true;
     async function loadRole() {
-      if (!partnerReady) return;
+      if (!partnerReady || !employeeReady) return;
+      if (employeeToken && employeeInfo?.role) {
+        if (active) setRole(employeeInfo.role as UserRole);
+        return;
+      }
       if (!isSignedIn && !partnerToken) {
         setRole(null);
         return;
@@ -76,7 +82,7 @@ export default function UploadPage() {
     return () => {
       active = false;
     };
-  }, [apiBase, getToken, isSignedIn, partnerToken, partnerReady]);
+  }, [apiBase, employeeInfo?.role, employeeReady, employeeToken, getToken, isSignedIn, partnerToken, partnerReady]);
 
   async function pollJob(token: string, jobId: string) {
     for (let i = 0; i < 60; i++) {
@@ -100,7 +106,7 @@ export default function UploadPage() {
     setExtractResp(null);
     setJob(null);
 
-    if (!isSignedIn && !partnerToken) {
+    if (!isSignedIn && !partnerToken && !employeeToken) {
       setError("Please sign in first.");
       return;
     }
@@ -120,7 +126,7 @@ export default function UploadPage() {
     setBusy(true);
     try {
       // Clerk users use Clerk token; only use partner token if not signed in via Clerk
-      const token = isSignedIn ? (await getToken()) : partnerToken;
+      const token = employeeToken ?? (isSignedIn ? (await getToken()) : partnerToken);
       if (!token) throw new Error("Could not retrieve auth token.");
 
       const form = new FormData();
@@ -199,7 +205,7 @@ export default function UploadPage() {
     return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${color}`}>{text}</span>;
   };
 
-  if (!partnerReady) {
+  if (!partnerReady || !employeeReady) {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-3xl mx-auto p-6">
@@ -211,7 +217,7 @@ export default function UploadPage() {
     );
   }
 
-  if (!isSignedIn && !partnerToken) {
+  if (!isSignedIn && !partnerToken && !employeeToken) {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-3xl mx-auto p-6">

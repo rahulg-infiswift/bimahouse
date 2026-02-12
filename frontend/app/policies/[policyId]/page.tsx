@@ -7,6 +7,7 @@ import { useAuth } from "@clerk/nextjs";
 import PolicyViewer from "./PolicyViewer";
 import { canAccessPolicies, fetchUserRole, isEmployeeRole, UserRole } from "../../lib/roles";
 import { usePartnerSession } from "../../lib/use-partner-session";
+import { useEmployeeSession } from "../../lib/use-employee-session";
 
 type PolicyResp = {
   policy_id: string;
@@ -24,6 +25,7 @@ export default function PolicyDetailsPage() {
 
   const { getToken, isSignedIn } = useAuth();
   const { partnerToken, partnerReady } = usePartnerSession();
+  const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
 
   const apiBase = useMemo(
     () => process.env.NEXT_PUBLIC_API_BASE_URL || API_BASE_DEFAULT,
@@ -48,7 +50,11 @@ export default function PolicyDetailsPage() {
   useEffect(() => {
     let active = true;
     async function loadRole() {
-      if (!partnerReady) return;
+      if (!partnerReady || !employeeReady) return;
+      if (employeeToken && employeeInfo?.role) {
+        if (active) setRole(employeeInfo.role as UserRole);
+        return;
+      }
       if (!isSignedIn && !partnerToken) {
         setRole(null);
         return;
@@ -71,12 +77,12 @@ export default function PolicyDetailsPage() {
     return () => {
       active = false;
     };
-  }, [apiBase, getToken, isSignedIn, partnerToken, partnerReady]);
+  }, [apiBase, employeeInfo?.role, employeeReady, employeeToken, getToken, isSignedIn, partnerToken, partnerReady]);
 
   async function loadPolicy() {
     setError("");
-    if (!partnerReady) return;
-    if ((!isSignedIn && !partnerToken) || !policyId) {
+    if (!partnerReady || !employeeReady) return;
+    if ((!isSignedIn && !partnerToken && !employeeToken) || !policyId) {
       setPolicy(null);
       return;
     }
@@ -88,7 +94,7 @@ export default function PolicyDetailsPage() {
     setBusy(true);
     try {
       // Clerk users use Clerk token; only use partner token if not signed in via Clerk
-      const token = isSignedIn ? (await getToken()) : partnerToken;
+      const token = employeeToken ?? (isSignedIn ? (await getToken()) : partnerToken);
       if (!token) throw new Error("Could not retrieve auth token.");
 
       const res = await fetchWithAuth(`/v1/policies/${policyId}`, token);
@@ -110,7 +116,7 @@ export default function PolicyDetailsPage() {
     setError("");
     try {
       // Clerk users use Clerk token; only use partner token if not signed in via Clerk
-      const token = isSignedIn ? (await getToken()) : partnerToken;
+      const token = employeeToken ?? (isSignedIn ? (await getToken()) : partnerToken);
       if (!token) throw new Error("Could not retrieve auth token.");
       if (!policyId) throw new Error("Missing policyId.");
 
@@ -139,9 +145,9 @@ export default function PolicyDetailsPage() {
     if (!policyId) return;
     loadPolicy();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn, policyId, role, partnerToken, partnerReady]);
+  }, [employeeToken, employeeReady, isSignedIn, policyId, role, partnerToken, partnerReady]);
 
-  if (!partnerReady) {
+  if (!partnerReady || !employeeReady) {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-5xl mx-auto p-6">
@@ -153,7 +159,7 @@ export default function PolicyDetailsPage() {
     );
   }
 
-  if (!isSignedIn && !partnerToken) {
+  if (!isSignedIn && !partnerToken && !employeeToken) {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-5xl mx-auto p-6">
@@ -250,7 +256,7 @@ export default function PolicyDetailsPage() {
         )}
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          {!isSignedIn && !partnerToken ? (
+          {!isSignedIn && !partnerToken && !employeeToken ? (
             <div className="text-sm text-slate-600">
               Please sign in to view this policy.
             </div>

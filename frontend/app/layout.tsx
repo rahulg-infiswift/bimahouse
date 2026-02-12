@@ -8,9 +8,10 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
-import { canAccessPolicies, isAdminRole, isEmployeeRole, UserRole } from "./lib/roles";
+import { isAdminRole, isEmployeeRole, UserRole } from "./lib/roles";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PartnerDesktopNav, PartnerMobileNav, PartnerUserButton } from "./components/PartnerNavLinks";
+import { EmployeeDesktopNav, EmployeeMobileNav, EmployeeUserButton } from "./components/EmployeeNavLinks";
 import { LoginDropdown } from "./components/LoginDropdown";
 import { HideForPartner } from "./components/AuthWrappers";
 import { NavLink, MobileNavLink } from "./components/NavLink";
@@ -92,6 +93,8 @@ export default async function RootLayout({
                   </SignedIn>
                   {/* Partner nav links for OTP-logged partners (client component) */}
                   <PartnerDesktopNav />
+                  {/* Employee nav links for OTP-logged employees (client component) */}
+                  <EmployeeDesktopNav />
                   {showAboutLink && (
                     <HideForPartner>
                       <NavLink href="/about" label="About Us" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} />
@@ -120,6 +123,8 @@ export default async function RootLayout({
                 {showSupportLink && <MobileNavLink href="/support" icon={<svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3l2 5-2 1a11 11 0 005 5l1-2 5 2v3a2 2 0 01-2 2 16 16 0 01-14-14z" /></svg>} />}
                 {/* Partner mobile nav for OTP-logged partners */}
                 <PartnerMobileNav />
+                {/* Employee mobile nav for OTP-logged employees */}
+                <EmployeeMobileNav />
 
                 <SignedOut>
                   <HideForPartner>
@@ -134,6 +139,8 @@ export default async function RootLayout({
                 </SignedIn>
                 {/* Partner user button for OTP-logged partners */}
                 <PartnerUserButton />
+                {/* Employee user button for OTP-logged employees */}
+                <EmployeeUserButton />
               </div>
             </div>
           </header>

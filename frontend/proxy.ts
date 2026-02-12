@@ -1,10 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
-// Define which routes require authentication
-const isProtectedRoute = createRouteMatcher([
-  '/admin(.*)',
-  '/leads(.*)',
-])
+// Clerk auth remains enabled for customer journeys; employee/partner OTP routes
+// are authorized against backend APIs instead of Clerk middleware.
+const isProtectedRoute = createRouteMatcher([])
 
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
