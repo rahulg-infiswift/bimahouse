@@ -308,7 +308,6 @@ def _validate_posp_application_payload(payload: PospApplicationCreateIn) -> None
 # -------------------------
 
 @router.get("/v1/posp-applications/summary", response_model=PospApplicationSummaryOut)
-@router.get("/v1/leads/summary", response_model=PospApplicationSummaryOut)
 def posp_applications_summary(
     employee: Employee = Depends(require_any_employee_role()),
     db: Session = Depends(get_db),
@@ -329,7 +328,6 @@ def posp_applications_summary(
 
 
 @router.get("/v1/posp-applications", response_model=list[PospApplicationListItem])
-@router.get("/v1/leads", response_model=list[PospApplicationListItem])
 def list_posp_applications(
     status: Optional[str] = Query(default=None),
     employee: Employee = Depends(require_any_employee_role()),
@@ -361,7 +359,6 @@ def list_posp_applications(
 
 
 @router.post("/v1/posp-applications", response_model=PospApplicationCreateOut)
-@router.post("/v1/leads", response_model=PospApplicationCreateOut)
 def create_posp_application(
     payload: PospApplicationCreateIn,
     employee: Employee = Depends(require_any_employee_role()),
@@ -487,7 +484,6 @@ def verify_partner_login_otp(
 
 
 @router.get("/v1/posp-applications/{application_id}", response_model=PospApplicationDetailOut)
-@router.get("/v1/leads/{application_id}", response_model=PospApplicationDetailOut)
 def get_posp_application(
     application_id: str,
     employee: Employee = Depends(require_any_employee_role()),
@@ -503,7 +499,6 @@ def get_posp_application(
 
 # Email OTP verfication
 @router.post("/v1/posp-applications/{application_id}/send-otp", response_model=OtpSendOut)
-@router.post("/v1/leads/{application_id}/send-otp", response_model=OtpSendOut)
 def send_posp_application_email_otp(
     application_id: str,
     employee: Employee = Depends(require_any_employee_role()),
@@ -546,7 +541,6 @@ def send_posp_application_email_otp(
 
 
 @router.post("/v1/posp-applications/{application_id}/verify-otp", response_model=OtpVerifyOut)
-@router.post("/v1/leads/{application_id}/verify-otp", response_model=OtpVerifyOut)
 def verify_posp_application_email_otp(
     application_id: str,
     payload: OtpVerifyIn,
@@ -592,7 +586,6 @@ def verify_posp_application_email_otp(
 
 
 @router.patch("/v1/posp-applications/{application_id}", response_model=PospApplicationDetailOut)
-@router.patch("/v1/leads/{application_id}", response_model=PospApplicationDetailOut)
 def update_posp_application(
     application_id: str,
     payload: AdminPospApplicationUpdateIn,
@@ -689,7 +682,6 @@ def update_posp_application(
 
 
 @router.post("/v1/posp-applications/{application_id}/documents")
-@router.post("/v1/leads/{application_id}/documents")
 async def upload_doc(
     application_id: str,
     doc_type: str = Query(..., description="aadhaar|pan|marksheet_10|cancelled_cheque|photo|other"),
