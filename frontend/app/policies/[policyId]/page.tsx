@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import { ArrowLeft, Download, FileText, RefreshCw, ShieldCheck } from "lucide-react";
 import PolicyViewer from "./PolicyViewer";
 import { canAccessPolicies, fetchUserRole, isEmployeeRole, UserRole } from "../../lib/roles";
 import { usePartnerSession } from "../../lib/use-partner-session";
@@ -153,7 +154,7 @@ export default function PolicyDetailsPage() {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-5xl mx-auto p-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-sm text-slate-600">Loading session...</p>
           </div>
         </div>
@@ -165,8 +166,8 @@ export default function PolicyDetailsPage() {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-5xl mx-auto p-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">Please sign in</h2>
+          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-2 text-lg font-semibold text-[#0B1F3B]">Please sign in</h2>
             <p className="text-sm text-slate-600">Sign in to view policy details.</p>
           </div>
         </div>
@@ -178,8 +179,8 @@ export default function PolicyDetailsPage() {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-5xl mx-auto p-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">Access pending</h2>
+          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-2 text-lg font-semibold text-[#0B1F3B]">Access pending</h2>
             <p className="text-sm text-slate-600">Your account does not have access to policies yet.</p>
           </div>
         </div>
@@ -191,22 +192,26 @@ export default function PolicyDetailsPage() {
     <main className="py-12 px-4 sm:px-6">
       <div className="mx-auto max-w-5xl">
         {/* Header */}
-        <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 p-8 shadow-sm mb-8">
+        <div className="mb-8 rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/40 p-8 shadow-sm">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Link href="/policies" className="text-blue-600 hover:text-blue-700">
+                <Link href="/policies" className="inline-flex items-center gap-1 text-[#0B5CAD] hover:text-[#0A4F95]">
+                  <ArrowLeft className="h-3.5 w-3.5" />
                   {isEmployeeRole(role) ? "All Policies" : "My Policies"}
                 </Link>
                 <span>/</span>
                 <span>Details</span>
               </div>
 
-              <h1 className="mt-4 text-3xl font-semibold text-slate-900">Policy Details</h1>
+              <h1 className="mt-4 inline-flex items-center gap-2 text-3xl font-semibold text-[#0B1F3B]">
+                <FileText className="h-7 w-7 text-[#0B5CAD]" />
+                Policy Details
+              </h1>
 
               {policy ? (
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                  <span className="font-medium text-slate-900">{policy.original_filename}</span>
+                  <span className="font-medium text-[#0B1F3B]">{policy.original_filename}</span>
                   <span className="text-slate-300">•</span>
                   <span className="text-slate-500">{new Date(policy.created_at).toLocaleDateString()}</span>
                 </div>
@@ -219,15 +224,16 @@ export default function PolicyDetailsPage() {
               <button
                 onClick={loadPolicy}
                 disabled={busy}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
               >
+                <RefreshCw className={`h-3.5 w-3.5 ${busy ? "animate-spin" : ""}`} />
                 {busy ? "Refreshing…" : "Refresh"}
               </button>
 
               <button
                 onClick={() => download("json")}
                 disabled={!policy?.extracted_json}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                className="rounded-sm border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
               >
                 JSON
               </button>
@@ -235,7 +241,7 @@ export default function PolicyDetailsPage() {
               <button
                 onClick={() => download("csv")}
                 disabled={!policy?.extracted_json}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                className="rounded-sm border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
               >
                 CSV
               </button>
@@ -243,8 +249,9 @@ export default function PolicyDetailsPage() {
               <button
                 onClick={() => download("xlsx")}
                 disabled={!policy?.extracted_json}
-                className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-sm bg-[#0B5CAD] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-[#0A4F95] disabled:opacity-50 transition-colors"
               >
+                <Download className="h-3.5 w-3.5" />
                 Excel
               </button>
             </div>
@@ -257,7 +264,7 @@ export default function PolicyDetailsPage() {
           </div>
         )}
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
           {!isSignedIn && !partnerToken && !employeeToken ? (
             <div className="text-sm text-slate-600">
               Please sign in to view this policy.
@@ -271,8 +278,9 @@ export default function PolicyDetailsPage() {
           )}
         </div>
 
-        <div className="mt-6 text-xs text-slate-400">
-          Policy ID: <code className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">{policyId}</code>
+        <div className="mt-6 inline-flex items-center gap-2 text-xs text-slate-400">
+          <ShieldCheck className="h-3.5 w-3.5 text-slate-400" />
+          Policy ID: <code className="rounded-sm bg-slate-100 px-1.5 py-0.5 text-slate-600">{policyId}</code>
         </div>
       </div>
     </main>

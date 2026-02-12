@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { UserRole, isAdminRole } from "../lib/roles";
 import { useEmployeeSession } from "../lib/use-employee-session";
-import Link from "next/link";
+import { AlertCircle, CheckCircle2, RefreshCw, Search, ShieldUser, Users } from "lucide-react";
 
 type UserOut = {
   user_id: string;
@@ -28,11 +28,6 @@ function formatDate(value: string): string {
   return date.toLocaleString();
 }
 
-function roleTypeLabel(role: UserRole): string {
-  if (role === "partner") return "Partner";
-  return "Customer";
-}
-
 export default function AdminUsersClient({ initialRole }: AdminUsersClientProps) {
   const { getToken, isSignedIn } = useAuth();
   const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
@@ -44,7 +39,11 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [roleEdits, setRoleEdits] = useState<Record<string, UserRole>>({});
   const [notice, setNotice] = useState<string | null>(null);
-  const [activeType, setActiveType] = useState<"all" | "partner" | "customer">("all");
+
+  const getAuthToken = useCallback(async (): Promise<string | null> => {
+    if (employeeToken) return employeeToken;
+    return getToken();
+  }, [employeeToken, getToken]);
 
   useEffect(() => {
     let active = true;
@@ -73,11 +72,6 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
       active = false;
     };
   }, [employeeInfo?.role, employeeReady, employeeToken, getAuthToken, isSignedIn]);
-
-  const getAuthToken = useCallback(async (): Promise<string | null> => {
-    if (employeeToken) return employeeToken;
-    return getToken();
-  }, [employeeToken, getToken]);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -124,18 +118,7 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
     });
   }, [query, users]);
 
-  const visibleUsers = useMemo(() => {
-    if (activeType === "all") return filteredUsers;
-    if (activeType === "partner") return filteredUsers.filter((user) => user.role === "partner");
-    return filteredUsers.filter((user) => user.role === "customer");
-  }, [activeType, filteredUsers]);
-
-  const stats = useMemo(() => {
-    const total = users.length;
-    const partners = users.filter((user) => user.role === "partner").length;
-    const customers = users.filter((user) => user.role === "customer").length;
-    return { total, partners, customers };
-  }, [users]);
+  const visibleUsers = filteredUsers;
 
   async function updateUserRole(userId: string) {
     const nextRole = roleEdits[userId];
@@ -179,8 +162,8 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
   if (!hasSession) {
     return (
       <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h1 className="text-2xl font-semibold text-slate-800">Manage Users</h1>
+        <div className="rounded-sm border border-slate-200 bg-white p-8 shadow-sm">
+          <h1 className="text-2xl font-semibold text-[#0B1F3B]">Manage Users</h1>
           <p className="mt-3 text-sm text-slate-600">Please sign in to manage user access.</p>
         </div>
       </section>
@@ -190,7 +173,7 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
   if (!isAdminRole(currentRole)) {
     return (
       <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 shadow-sm">
+        <div className="rounded-sm border border-rose-200 bg-rose-50 p-8 shadow-sm">
           <h1 className="text-2xl font-semibold text-rose-700">Access restricted</h1>
           <p className="mt-3 text-sm text-rose-600">
             You need admin access to manage users.
@@ -203,91 +186,65 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
   return (
     <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       <div className="flex flex-col gap-8">
-        <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 p-8 shadow-sm">
+        <div className="rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/40 p-8 shadow-sm">
           <div className="flex flex-col gap-6">
             <div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white shadow-sm">
+              <span className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
+                <ShieldUser className="h-3.5 w-3.5" />
                 Admin Console
               </span>
-              <h1 className="mt-4 text-3xl font-semibold text-slate-900">Manage Users</h1>
+              <h1 className="mt-4 text-3xl font-semibold text-[#0B1F3B]">Manage Users</h1>
               <p className="mt-2 text-sm text-slate-600">
                 Assign roles for customer accounts.
               </p>
-              <div className="mt-3">
-                <Link href="/admin/employees" className="text-sm font-medium text-blue-600 hover:text-blue-700">
-                  Go to employee management
-                </Link>
-              </div>
             </div>
           </div>
 
-          <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex-1">
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Search users
-              </label>
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by email or user id"
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {(["all", "partner", "customer"] as const).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setActiveType(type)}
-                  className={`inline-flex h-10 items-center rounded-xl px-4 text-xs font-semibold uppercase tracking-wide transition ${
-                    activeType === type
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  {type === "all"
-                    ? `All (${stats.total})`
-                    : type === "partner"
-                    ? `Partners (${stats.partners})`
-                    : `Customers (${stats.customers})`}
-                </button>
-              ))}
-            </div>
+          <div className="mt-8">
+            <label className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <Search className="h-3.5 w-3.5 text-[#0B5CAD]" />
+              Search users
+            </label>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by email or user id"
+              className="mt-2 w-full rounded-sm border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
+            />
           </div>
 
           {error && (
-            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+            <div className="mt-4 flex items-start gap-2 rounded-sm border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               {error}
             </div>
           )}
         </div>
 
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-3">
+        <div className="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100 bg-gradient-to-r from-[#EFF6FF] via-[#F8FBFF] to-white px-5 py-3">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-slate-700">Users</span>
-              <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                <Users className="h-4 w-4 text-[#0B5CAD]" />
+                Users
+              </span>
+              <span className="rounded-sm bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
                 {visibleUsers.length}
               </span>
             </div>
             <button
               onClick={loadUsers}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-60 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-60 transition-colors"
             >
-              <svg className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </button>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50/80">
+              <thead className="bg-blue-50/70">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Type
-                  </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Email
                   </th>
@@ -303,14 +260,14 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
               <tbody className="divide-y divide-slate-100">
                 {loading && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
                       Loading users...
                     </td>
                   </tr>
                 )}
                 {!loading && visibleUsers.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
                       No users found.
                     </td>
                   </tr>
@@ -321,14 +278,16 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
                     className={`transition ${index % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-blue-50/40`}
                   >
                     <td className="px-4 py-4">
-                      <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-                        {roleTypeLabel(user.role)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
                       <div className="font-medium text-slate-800">{user.primary_email ?? "—"}</div>
-                      <div className="text-xs text-slate-500">
-                        {user.email_verified ? "Verified" : "Unverified"} ·{" "}
+                      <div className="mt-1 flex items-center gap-1.5 text-xs">
+                        <span
+                          className={`rounded-full px-2.5 py-1 font-medium ${
+                            user.email_verified ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-700"
+                          }`}
+                        >
+                          {user.email_verified ? "Verified" : "Unverified"}
+                        </span>
+                        <span className="text-slate-400">·</span>
                         <span className="font-mono text-slate-400">{user.user_id}</span>
                       </div>
                     </td>
@@ -341,7 +300,7 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
                             [user.user_id]: event.target.value as UserRole,
                           }))
                         }
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        className="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
                       >
                         {USER_ROLE_OPTIONS.map((role) => (
                           <option key={role} value={role}>
@@ -356,7 +315,7 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
                         type="button"
                         onClick={() => updateUserRole(user.user_id)}
                         disabled={updatingUserId === user.user_id}
-                        className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-200 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                        className="rounded-sm bg-[#0B5CAD] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#0A4F95] disabled:cursor-not-allowed disabled:bg-slate-300"
                       >
                         {updatingUserId === user.user_id ? "Saving..." : "Save"}
                       </button>
@@ -370,7 +329,8 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
       </div>
 
       {notice && (
-        <div className="fixed bottom-6 right-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-lg">
+        <div className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-sm border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 shadow-lg">
+          <CheckCircle2 className="h-4 w-4" />
           {notice}
         </div>
       )}

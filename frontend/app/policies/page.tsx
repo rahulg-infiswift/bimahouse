@@ -4,6 +4,18 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+import {
+  AlertCircle,
+  CalendarDays,
+  Clock3,
+  Download,
+  FileSearch,
+  Filter,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import { canAccessPolicies, fetchUserRole, isEmployeeRole, UserRole } from "../lib/roles";
 import { usePartnerSession } from "../lib/use-partner-session";
 import { useEmployeeSession } from "../lib/use-employee-session";
@@ -188,7 +200,7 @@ export default function PoliciesPage() {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-6xl mx-auto p-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-sm text-slate-600">Loading session...</p>
           </div>
         </div>
@@ -202,8 +214,8 @@ export default function PoliciesPage() {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-6xl mx-auto p-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">Please sign in</h2>
+          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-2 text-lg font-semibold text-[#0B1F3B]">Please sign in</h2>
             <p className="text-sm text-slate-600">Sign in to view your policies.</p>
           </div>
         </div>
@@ -215,8 +227,8 @@ export default function PoliciesPage() {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-6xl mx-auto p-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">Access pending</h2>
+          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-2 text-lg font-semibold text-[#0B1F3B]">Access pending</h2>
             <p className="text-sm text-slate-600">Your account does not have access to policies yet.</p>
           </div>
         </div>
@@ -228,13 +240,14 @@ export default function PoliciesPage() {
     <main className="py-12 px-4 sm:px-6">
       <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 p-8 shadow-sm mb-8">
+        <div className="mb-8 rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/40 p-8 shadow-sm">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white shadow-sm">
+              <span className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
+                <ShieldCheck className="h-3.5 w-3.5" />
                 Policies
               </span>
-              <h1 className="mt-4 text-3xl font-semibold text-slate-900">
+              <h1 className="mt-4 text-3xl font-semibold text-[#0B1F3B]">
                 {isEmployeeRole(role) ? "All Policies" : "My Policies"}
               </h1>
               <p className="mt-2 text-sm text-slate-600">
@@ -247,11 +260,9 @@ export default function PoliciesPage() {
             {!isEmployeeRole(role) && (
               <Link
                 href="/upload"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-200 hover:from-blue-700 hover:to-blue-800 transition-all"
+                className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#0B5CAD] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#0A4F95] transition-colors"
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
+                <Plus className="h-4 w-4" />
                 Upload New
               </Link>
             )}
@@ -269,7 +280,7 @@ export default function PoliciesPage() {
                   value={startDate}
                   max={endDate || new Date().toISOString().split("T")[0]}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
+                  className="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
                 />
               </div>
 
@@ -284,25 +295,23 @@ export default function PoliciesPage() {
                   min={startDate || undefined}
                   max={new Date().toISOString().split("T")[0]}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
+                  className="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
                 />
               </div>
 
               <button
                 onClick={loadPolicies}
                 disabled={busy}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-60 transition-colors"
+                className="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-60 transition-colors"
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
+                <Filter className="h-4 w-4" />
                 {busy ? "Loading…" : "Apply Filter"}
               </button>
 
               {(startDate || endDate) && (
                 <button
                   onClick={clearFilters}
-                  className="rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                  className="rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                 >
                   Clear
                 </button>
@@ -312,12 +321,10 @@ export default function PoliciesPage() {
             <button
               onClick={downloadAllExcel}
               disabled={downloading || extractedCount === 0}
-              className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-[#0A4F95] disabled:opacity-50 transition-colors"
               title={extractedCount === 0 ? "No extracted policies to download" : `Download ${extractedCount} policies as Excel`}
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
+              <Download className="h-4 w-4" />
               {downloading ? "Downloading…" : `Download Excel (${extractedCount})`}
             </button>
           </div>
@@ -325,24 +332,22 @@ export default function PoliciesPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 flex items-start gap-3 rounded-xl bg-red-50 border border-red-100 p-4">
-            <svg className="h-5 w-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div className="mb-6 flex items-start gap-3 rounded-sm bg-red-50 border border-red-100 p-4">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
             <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
 
         {/* Policies List */}
-        <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-5 py-3">
+          <div className="flex items-center justify-between border-b border-blue-100 bg-gradient-to-r from-[#EFF6FF] via-[#F8FBFF] to-white px-5 py-3">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-slate-700">
+              <span className="text-sm font-semibold text-[#0B1F3B]">
                 {items.length} {items.length === 1 ? "policy" : "policies"}
               </span>
               {extractedCount > 0 && (
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                <span className="rounded-sm border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-[#0B5CAD]">
                   {extractedCount} extracted
                 </span>
               )}
@@ -350,11 +355,9 @@ export default function PoliciesPage() {
             <button
               onClick={loadPolicies}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-60 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-60 transition-colors"
             >
-              <svg className={`h-3.5 w-3.5 ${busy ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+              <RefreshCw className={`h-3.5 w-3.5 ${busy ? "animate-spin" : ""}`} />
               Refresh
             </button>
           </div>
@@ -363,26 +366,19 @@ export default function PoliciesPage() {
           {!isSignedIn && !partnerToken ? (
             <div className="flex flex-col items-center justify-center py-16 px-6">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 mb-4">
-                <svg className="h-7 w-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+                <UserRound className="h-7 w-7 text-slate-400" />
               </div>
               <p className="text-sm text-slate-600">Please sign in to view your policies.</p>
             </div>
           ) : busy && items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-6">
-              <svg className="h-8 w-8 text-blue-600 animate-spin mb-4" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
+              <RefreshCw className="mb-4 h-8 w-8 animate-spin text-[#0B5CAD]" />
               <p className="text-sm text-slate-600">Loading policies...</p>
             </div>
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-6">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 mb-4">
-                <svg className="h-7 w-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+                <FileSearch className="h-7 w-7 text-slate-400" />
               </div>
               <p className="text-sm font-medium text-slate-700 mb-1">No policies found</p>
               <p className="text-sm text-slate-500">
@@ -391,11 +387,9 @@ export default function PoliciesPage() {
               {!startDate && !endDate && (
                 <Link
                   href="/upload"
-                  className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+                  className="mt-4 inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-4 py-2 text-sm font-medium text-white hover:bg-[#0A4F95] transition-colors"
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
+                  <Plus className="h-4 w-4" />
                   Upload First Policy
                 </Link>
               )}
@@ -405,75 +399,57 @@ export default function PoliciesPage() {
               {items.map((p, idx) => {
                 const id = p.policy_id;
                 const hasId = typeof id === "string" && id.length > 0;
+                const isExtracted = p.has_extracted_json;
 
                 return (
                   <div
                     key={id || `${p.original_filename}-${p.created_at}`}
-                    className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-blue-50/40`}
+                    className={`group flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-l-2 px-5 py-4 transition-all ${
+                      isExtracted ? "border-l-[#2563EB]" : "border-l-[#93C5FD]"
+                    } ${idx % 2 === 0 ? "bg-white" : "bg-[#F8FAFC]"} hover:bg-[#F3F8FF]`}
                   >
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                        p.has_extracted_json ? "bg-emerald-100" : "bg-amber-100"
-                      }`}>
-                        <svg
-                          className={`h-5 w-5 ${p.has_extracted_json ? "text-emerald-600" : "text-amber-600"}`}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
+                    <div className="min-w-0">
+                      {hasId ? (
+                        <Link
+                          href={`/policies/${id}`}
+                          className="block truncate font-semibold text-[#0B1F3B] transition-colors group-hover:text-[#0B5CAD]"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0">
-                        {hasId ? (
-                          <Link
-                            href={`/policies/${id}`}
-                            className="block truncate font-medium text-slate-900 hover:text-blue-600 transition-colors"
-                          >
-                            {p.original_filename}
-                          </Link>
-                        ) : (
-                          <div className="truncate font-medium text-slate-900">
-                            {p.original_filename}
-                          </div>
-                        )}
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            {new Date(p.created_at).toLocaleDateString()}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                          {p.original_filename}
+                        </Link>
+                      ) : (
+                        <div className="truncate font-medium text-[#0B1F3B]">
+                          {p.original_filename}
                         </div>
+                      )}
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
+                          {new Date(p.created_at).toLocaleDateString()}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock3 className="h-3.5 w-3.5 text-slate-400" />
+                          {new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3">
                       <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          p.has_extracted_json
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-amber-100 text-amber-700"
+                        className={`rounded-sm px-2.5 py-1 text-xs font-medium ${
+                          isExtracted
+                            ? "border border-[#BFDBFE] bg-[#EFF6FF] text-[#1D4ED8]"
+                            : "border border-[#DBEAFE] bg-white text-[#3B82F6]"
                         }`}
                       >
-                        {p.has_extracted_json ? "Extracted" : "Pending"}
+                        {isExtracted ? "Extracted" : "Pending"}
                       </span>
                       {hasId && (
                         <Link
                           href={`/policies/${id}`}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                          className="inline-flex items-center gap-1.5 rounded-sm border border-[#BFDBFE] bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-[#0B5CAD] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-colors"
                         >
                           View
-                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                          </svg>
+                          <ShieldCheck className="h-3.5 w-3.5" />
                         </Link>
                       )}
                     </div>
