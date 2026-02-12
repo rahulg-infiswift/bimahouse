@@ -128,7 +128,7 @@ export default function SupportPage() {
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-4xl mx-auto p-6">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-[#0B1F3B]">Please sign in</h2>
+            <h2 className="mb-2 text-lg font-semibold text-heading">Please sign in</h2>
             <p className="text-sm text-slate-600">Sign in to contact support.</p>
           </div>
         </div>
@@ -141,7 +141,7 @@ export default function SupportPage() {
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-4xl mx-auto p-6">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-[#0B1F3B]">Access pending</h2>
+            <h2 className="mb-2 text-lg font-semibold text-heading">Access pending</h2>
             <p className="text-sm text-slate-600">Your account does not have access to support yet.</p>
           </div>
         </div>
@@ -158,7 +158,7 @@ export default function SupportPage() {
               <Headset className="h-3.5 w-3.5" />
               Support
             </span>
-            <h1 className="mt-4 text-3xl font-semibold text-[#0B1F3B]">Partner Support</h1>
+            <h1 className="mt-4 text-3xl font-semibold text-heading">Partner Support</h1>
             <p className="mt-2 text-sm text-slate-600">
               Raise an issue about policy uploads, payments, or account access. Our team will respond quickly.
             </p>

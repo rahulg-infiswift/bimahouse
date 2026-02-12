@@ -26,6 +26,8 @@ type PolicyListItem = {
   created_at: string;
   has_extracted_json: boolean;
   schema_version: string;
+  partner_name?: string | null;
+  partner_display_id?: string | null;
 };
 
 type PoliciesResp = {
@@ -53,6 +55,7 @@ export default function PoliciesPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [downloading, setDownloading] = useState(false);
+  const isEmployeeSession = Boolean(employeeToken) || isEmployeeRole(role);
 
   async function fetchWithAuth(path: string, token: string, init?: RequestInit) {
     return fetch(`${apiBase}${path}`, {
@@ -113,7 +116,7 @@ export default function PoliciesPage() {
       // Clerk users (including employees) use Clerk token; only use partner token if not signed in via Clerk
       const authToken = employeeToken ?? (isSignedIn ? (await getToken()) : partnerToken);
       if (!authToken) throw new Error("Could not retrieve auth token.");
-      const policyBasePath = employeeToken ? "/v1/admin/policies" : "/v1/policies";
+      const policyBasePath = isEmployeeSession ? "/v1/admin/policies" : "/v1/partner/policies";
 
       const params = new URLSearchParams();
       if (startDate) params.append("start_date", startDate);
@@ -145,7 +148,7 @@ export default function PoliciesPage() {
       // Clerk users (including employees) use Clerk token; only use partner token if not signed in via Clerk
       const authToken = employeeToken ?? (isSignedIn ? (await getToken()) : partnerToken);
       if (!authToken) throw new Error("Could not retrieve auth token.");
-      const policyBasePath = employeeToken ? "/v1/admin/policies" : "/v1/policies";
+      const policyBasePath = isEmployeeSession ? "/v1/admin/policies" : "/v1/partner/policies";
 
       const params = new URLSearchParams();
       if (startDate) params.append("start_date", startDate);
@@ -215,8 +218,22 @@ export default function PoliciesPage() {
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-6xl mx-auto p-6">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-[#0B1F3B]">Please sign in</h2>
-            <p className="text-sm text-slate-600">Sign in to view your policies.</p>
+            <h2 className="mb-2 text-lg font-semibold text-heading">Please sign in</h2>
+            <p className="text-sm text-slate-600">Sign in to view policies.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/partner/login"
+                className="rounded-sm border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-heading hover:bg-slate-50"
+              >
+                Partner Login
+              </Link>
+              <Link
+                href="/employee/login"
+                className="rounded-sm border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-heading hover:bg-slate-50"
+              >
+                Employee Login
+              </Link>
+            </div>
           </div>
         </div>
       </main>
@@ -228,7 +245,7 @@ export default function PoliciesPage() {
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-6xl mx-auto p-6">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-[#0B1F3B]">Access pending</h2>
+            <h2 className="mb-2 text-lg font-semibold text-heading">Access pending</h2>
             <p className="text-sm text-slate-600">Your account does not have access to policies yet.</p>
           </div>
         </div>
@@ -241,31 +258,30 @@ export default function PoliciesPage() {
       <div className="mx-auto max-w-6xl">
         {/* Header */}
         <div className="mb-8 rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/40 p-8 shadow-sm">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <span className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Policies
-              </span>
-              <h1 className="mt-4 text-3xl font-semibold text-[#0B1F3B]">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              {isEmployeeRole(role) ? "Admin Console" : "Partner Console"}
+            </span>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <h1 className="text-3xl font-semibold text-heading">
                 {isEmployeeRole(role) ? "All Policies" : "My Policies"}
               </h1>
-              <p className="mt-2 text-sm text-slate-600">
-                {isEmployeeRole(role)
-                  ? "Browse and review all partner-uploaded policies."
-                  : "Your uploaded policies and extracted results."}
-              </p>
+              {!isEmployeeRole(role) && (
+                <Link
+                  href="/upload"
+                  className="inline-flex items-center gap-1.5 rounded-sm bg-[#0B5CAD] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#0A4F95]"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Upload New
+                </Link>
+              )}
             </div>
-
-            {!isEmployeeRole(role) && (
-              <Link
-                href="/upload"
-                className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#0B5CAD] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#0A4F95] transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                Upload New
-              </Link>
-            )}
+            <p className="mt-2 text-sm text-slate-600">
+              {isEmployeeRole(role)
+                ? "Browse and review all partner-uploaded policies."
+                : "Your uploaded policies and extracted results."}
+            </p>
           </div>
 
           <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -302,7 +318,7 @@ export default function PoliciesPage() {
               <button
                 onClick={loadPolicies}
                 disabled={busy}
-                className="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 disabled:opacity-60 transition-colors"
+                className="inline-flex h-[38px] items-center gap-2 rounded-sm bg-[#0B5CAD] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#0A4F95] disabled:opacity-60"
               >
                 <Filter className="h-4 w-4" />
                 {busy ? "Loading…" : "Apply Filter"}
@@ -343,7 +359,7 @@ export default function PoliciesPage() {
           {/* Header */}
           <div className="flex items-center justify-between border-b border-blue-100 bg-gradient-to-r from-[#EFF6FF] via-[#F8FBFF] to-white px-5 py-3">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-[#0B1F3B]">
+              <span className="text-sm font-semibold text-heading">
                 {items.length} {items.length === 1 ? "policy" : "policies"}
               </span>
               {extractedCount > 0 && (
@@ -363,12 +379,12 @@ export default function PoliciesPage() {
           </div>
 
           {/* Content */}
-          {!isSignedIn && !partnerToken ? (
+          {!isSignedIn && !partnerToken && !employeeToken ? (
             <div className="flex flex-col items-center justify-center py-16 px-6">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 mb-4">
                 <UserRound className="h-7 w-7 text-slate-400" />
               </div>
-              <p className="text-sm text-slate-600">Please sign in to view your policies.</p>
+              <p className="text-sm text-slate-600">Please sign in to view policies.</p>
             </div>
           ) : busy && items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-6">
@@ -405,23 +421,32 @@ export default function PoliciesPage() {
                   <div
                     key={id || `${p.original_filename}-${p.created_at}`}
                     className={`group flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-l-2 px-5 py-4 transition-all ${
-                      isExtracted ? "border-l-[#2563EB]" : "border-l-[#93C5FD]"
+                      isExtracted ? "border-l-[#0B5CAD]" : "border-l-[#93C5FD]"
                     } ${idx % 2 === 0 ? "bg-white" : "bg-[#F8FAFC]"} hover:bg-[#F3F8FF]`}
                   >
                     <div className="min-w-0">
                       {hasId ? (
                         <Link
                           href={`/policies/${id}`}
-                          className="block truncate font-semibold text-[#0B1F3B] transition-colors group-hover:text-[#0B5CAD]"
+                          className="block truncate font-semibold text-heading transition-colors group-hover:text-[#0B5CAD]"
                         >
                           {p.original_filename}
                         </Link>
                       ) : (
-                        <div className="truncate font-medium text-[#0B1F3B]">
+                        <div className="truncate font-medium text-heading">
                           {p.original_filename}
                         </div>
                       )}
                       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                        {isEmployeeSession && (p.partner_name || p.partner_display_id) && (
+                          <span className="inline-flex items-center gap-1">
+                            <UserRound className="h-3.5 w-3.5 text-slate-400" />
+                            <span className="text-slate-600">
+                              {p.partner_name || "Partner"}
+                              {p.partner_display_id ? ` (${p.partner_display_id})` : ""}
+                            </span>
+                          </span>
+                        )}
                         <span className="flex items-center gap-1">
                           <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
                           {new Date(p.created_at).toLocaleDateString()}
@@ -437,8 +462,8 @@ export default function PoliciesPage() {
                       <span
                         className={`rounded-sm px-2.5 py-1 text-xs font-medium ${
                           isExtracted
-                            ? "border border-[#BFDBFE] bg-[#EFF6FF] text-[#1D4ED8]"
-                            : "border border-[#DBEAFE] bg-white text-[#3B82F6]"
+                            ? "border border-[#BFDBFE] bg-[#EFF6FF] text-[#0B5CAD]"
+                            : "border border-[#DBEAFE] bg-white text-[#0B5CAD]"
                         }`}
                       >
                         {isExtracted ? "Extracted" : "Pending"}
@@ -446,7 +471,7 @@ export default function PoliciesPage() {
                       {hasId && (
                         <Link
                           href={`/policies/${id}`}
-                          className="inline-flex items-center gap-1.5 rounded-sm border border-[#BFDBFE] bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-[#0B5CAD] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-colors"
+                          className="inline-flex items-center gap-1.5 rounded-sm bg-[#0B5CAD] px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#0A4F95]"
                         >
                           View
                           <ShieldCheck className="h-3.5 w-3.5" />

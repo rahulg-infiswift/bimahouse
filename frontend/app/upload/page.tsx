@@ -144,7 +144,7 @@ export default function UploadPage() {
       const form = new FormData();
       form.append("file", file);
 
-      const res = await fetchWithAuth("/v1/policies/extract", token, {
+      const res = await fetchWithAuth("/v1/partner/policies/extract", token, {
         method: "POST",
         body: form,
       });
@@ -184,7 +184,7 @@ export default function UploadPage() {
       case "done":
         return (
           <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-blue-100">
-            <CheckCircle2 className="h-5 w-5 text-[#1D4ED8]" />
+            <CheckCircle2 className="h-5 w-5 text-[#0B5CAD]" />
           </div>
         );
       case "failed":
@@ -225,7 +225,7 @@ export default function UploadPage() {
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-3xl mx-auto p-6">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-[#0B1F3B]">Please sign in</h2>
+            <h2 className="mb-2 text-lg font-semibold text-heading">Please sign in</h2>
             <p className="text-sm text-slate-600">Sign in to upload policies.</p>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function UploadPage() {
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-3xl mx-auto p-6">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-[#0B1F3B]">Access pending</h2>
+            <h2 className="mb-2 text-lg font-semibold text-heading">Access pending</h2>
             <p className="text-sm text-slate-600">Your account does not have access to upload policies yet.</p>
           </div>
         </div>
@@ -255,9 +255,9 @@ export default function UploadPage() {
             <div>
               <span className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
                 <FileText className="h-3.5 w-3.5" />
-                Policies
+                {role === "partner" ? "Partner Console" : "Admin Console"}
               </span>
-              <h1 className="mt-4 text-3xl font-semibold text-[#0B1F3B]">Upload Policy</h1>
+              <h1 className="mt-4 text-3xl font-semibold text-heading">Upload Policy</h1>
               <p className="mt-2 text-sm text-slate-600">
                 Upload a PDF document to extract policy details using AI.
               </p>
@@ -295,7 +295,7 @@ export default function UploadPage() {
                     <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-sm bg-blue-100">
                       <FileText className="h-6 w-6 text-[#0B5CAD]" />
                     </div>
-                    <span className="text-sm font-medium text-[#0B1F3B]">{file.name}</span>
+                    <span className="text-sm font-medium text-heading">{file.name}</span>
                     <span className="mt-1 text-xs text-slate-500">
                       {(file.size / 1024 / 1024).toFixed(2)} MB
                     </span>
@@ -346,7 +346,7 @@ export default function UploadPage() {
               {getStatusIcon()}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-base font-semibold text-[#0B1F3B]">Extraction Job</h2>
+                  <h2 className="text-base font-semibold text-heading">Extraction Job</h2>
                   {getStatusLabel()}
                 </div>
                 <div className="space-y-1 text-sm">
@@ -396,18 +396,18 @@ export default function UploadPage() {
 
         {/* Help Section */}
         <div className="mt-8 rounded-sm border border-blue-100 bg-gradient-to-br from-[#F8FBFF] to-[#EEF5FF] p-5">
-          <h3 className="mb-2 text-sm font-semibold text-[#0B1F3B]">Supported Documents</h3>
+          <h3 className="mb-2 text-sm font-semibold text-heading">Supported Documents</h3>
           <ul className="space-y-2 text-sm text-slate-600">
             <li className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-[#2563EB]" />
+              <CheckCircle2 className="h-4 w-4 text-[#0B5CAD]" />
               Motor Insurance Policies (Private Car, Two-Wheeler)
             </li>
             <li className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-[#2563EB]" />
+              <CheckCircle2 className="h-4 w-4 text-[#0B5CAD]" />
               Health Insurance Policies
             </li>
             <li className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-[#2563EB]" />
+              <CheckCircle2 className="h-4 w-4 text-[#0B5CAD]" />
               PDF format only (max 20MB)
             </li>
           </ul>

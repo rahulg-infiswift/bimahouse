@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { useUser } from "@clerk/nextjs";
 import {
   ArrowRight,
@@ -9,6 +11,7 @@ import {
   FileText,
   ShieldCheck,
   ShieldUser,
+  UserRound,
   Users,
 } from "lucide-react";
 import { UserRole, isAdminRole } from "../lib/roles";
@@ -17,6 +20,14 @@ import { useEmployeeSession } from "../lib/use-employee-session";
 interface EmployeeHomeProps {
   role: UserRole | null;
 }
+type LeadSummary = {
+  submitted: number;
+  in_review: number;
+  approved: number;
+  rejected: number;
+};
+
+const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 function getRoleDisplayName(role: UserRole | null): string {
   if (!role) return "Employee";
@@ -32,23 +43,63 @@ function getRoleDisplayName(role: UserRole | null): string {
 }
 
 export default function EmployeeHome({ role }: EmployeeHomeProps) {
+  const { getToken } = useAuth();
   const { user } = useUser();
-  const { employeeInfo } = useEmployeeSession();
+  const { employeeInfo, employeeToken } = useEmployeeSession();
+  const [summary, setSummary] = useState<LeadSummary>({
+    submitted: 0,
+    in_review: 0,
+    approved: 0,
+    rejected: 0,
+  });
 
   const employeeName = employeeInfo?.full_name?.trim();
   const firstName = employeeName || user?.firstName || "Team Member";
   const effectiveRole = role ?? ((employeeInfo?.role as UserRole | undefined) ?? null);
   const showAdminLink = isAdminRole(effectiveRole);
+  const counts = useMemo(() => {
+    const totalLeads = summary.submitted + summary.in_review + summary.approved + summary.rejected;
+    const processed = summary.approved + summary.rejected;
+    return {
+      totalLeads,
+      inReview: summary.in_review,
+      approved: summary.approved,
+      processed,
+    };
+  }, [summary]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSummary() {
+      try {
+        const token = employeeToken ?? (await getToken());
+        if (!token) return;
+        const res = await fetch(`${API}/v1/posp-applications/summary`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as LeadSummary;
+        if (!cancelled) setSummary(data);
+      } catch {
+        // Keep safe defaults in UI if summary endpoint is unavailable
+      }
+    }
+    void loadSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, [employeeToken, getToken]);
 
   return (
-    <div className="px-4 py-10 sm:px-6">
+    <div className="px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-6xl">
         <section className="rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/30 p-8 shadow-sm">
           <span className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
             <ShieldUser className="h-3.5 w-3.5" />
-            Employee Workspace
+            Admin Console
           </span>
-          <h1 className="mt-4 text-3xl font-semibold text-[#0B1F3B]">
+          <h1 className="mt-4 text-3xl font-semibold text-heading">
             Welcome back, <span className="text-[#0B5CAD]">{firstName}</span>
           </h1>
           <p className="mt-2 text-sm text-slate-600">{getRoleDisplayName(effectiveRole)} Dashboard</p>
@@ -64,29 +115,12 @@ export default function EmployeeHome({ role }: EmployeeHomeProps) {
                 <Briefcase className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-base font-semibold text-[#0B1F3B]">Partner Leads</h3>
+                <h3 className="text-base font-semibold text-heading">
+                  {showAdminLink ? "Manage Partner Leads" : "Partner Leads"}
+                </h3>
                 <p className="mt-1 text-sm text-slate-600">Review submitted POSP applications.</p>
                 <p className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[#0B5CAD]">
-                  Open workspace
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/policies"
-            className="group rounded-sm border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
-          >
-            <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
-                <FileText className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-base font-semibold text-[#0B1F3B]">Policy Library</h3>
-                <p className="mt-1 text-sm text-slate-600">Browse and access uploaded policy files.</p>
-                <p className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[#0B5CAD]">
-                  View policies
+                  View lead queue
                   <ArrowRight className="h-3.5 w-3.5" />
                 </p>
               </div>
@@ -94,38 +128,80 @@ export default function EmployeeHome({ role }: EmployeeHomeProps) {
           </Link>
 
           {showAdminLink ? (
-            <Link
-              href="/admin"
-              className="group rounded-sm border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
-                  <Users className="h-5 w-5" />
+            <>
+              <Link
+                href="/admin"
+                className="group rounded-sm border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold text-heading">Manage Users</h3>
+                    <p className="mt-1 text-sm text-slate-600">Configure customer access and roles.</p>
+                    <p className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[#0B5CAD]">
+                      Open user management
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <h3 className="text-base font-semibold text-[#0B1F3B]">Manage Users</h3>
-                  <p className="mt-1 text-sm text-slate-600">Configure customer access and roles.</p>
-                  <p className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[#0B5CAD]">
-                    Open admin
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </p>
+              </Link>
+
+              <Link
+                href="/admin/employees"
+                className="group rounded-sm border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
+                    <UserRound className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold text-heading">Manage Employees</h3>
+                    <p className="mt-1 text-sm text-slate-600">Control employee access and internal roles.</p>
+                    <p className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[#0B5CAD]">
+                      Open employee management
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </>
           ) : (
-            <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-start gap-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
-                  <ShieldCheck className="h-5 w-5" />
+            <>
+              <Link
+                href="/policies"
+                className="group rounded-sm border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold text-heading">Policy Library</h3>
+                    <p className="mt-1 text-sm text-slate-600">Browse and access uploaded policy files.</p>
+                    <p className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[#0B5CAD]">
+                      View policy library
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-semibold text-[#0B1F3B]">Secure Access</h3>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Your dashboard permissions are based on your employee role.
-                  </p>
+              </Link>
+
+              <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-heading">Secure Access</h3>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Your dashboard permissions are based on your employee role.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
         </section>
 
@@ -135,34 +211,34 @@ export default function EmployeeHome({ role }: EmployeeHomeProps) {
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total Leads</span>
               <Briefcase className="h-4 w-4 text-[#0B5CAD]" />
             </div>
-            <p className="mt-3 text-2xl font-semibold text-[#0B1F3B]">—</p>
+            <p className="mt-3 text-2xl font-semibold text-[#0B5CAD]">{counts.totalLeads}</p>
           </div>
           <div className="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">In Review</span>
               <ClipboardList className="h-4 w-4 text-[#0B5CAD]" />
             </div>
-            <p className="mt-3 text-2xl font-semibold text-[#0B1F3B]">—</p>
+            <p className="mt-3 text-2xl font-semibold text-[#0B5CAD]">{counts.inReview}</p>
           </div>
           <div className="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Approved</span>
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
             </div>
-            <p className="mt-3 text-2xl font-semibold text-[#0B1F3B]">—</p>
+            <p className="mt-3 text-2xl font-semibold text-[#0B5CAD]">{counts.approved}</p>
           </div>
           <div className="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Policies Processed</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Applications Processed</span>
               <FileText className="h-4 w-4 text-[#0B5CAD]" />
             </div>
-            <p className="mt-3 text-2xl font-semibold text-[#0B1F3B]">—</p>
+            <p className="mt-3 text-2xl font-semibold text-[#0B5CAD]">{counts.processed}</p>
           </div>
         </section>
 
         <section className="mt-8 rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[#0B1F3B]">Recent Activity</h2>
+            <h2 className="text-lg font-semibold text-heading">Recent Activity</h2>
             <Link href="/leads" className="text-sm font-medium text-[#0B5CAD] hover:text-[#0A4F95]">
               View all
             </Link>

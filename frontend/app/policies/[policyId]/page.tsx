@@ -37,6 +37,7 @@ export default function PolicyDetailsPage() {
   const [error, setError] = useState<string>("");
   const [policy, setPolicy] = useState<PolicyResp | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
+  const isEmployeeSession = Boolean(employeeToken) || isEmployeeRole(role);
 
   async function fetchWithAuth(path: string, token: string, init?: RequestInit) {
     return fetch(`${apiBase}${path}`, {
@@ -97,7 +98,7 @@ export default function PolicyDetailsPage() {
       // Clerk users use Clerk token; only use partner token if not signed in via Clerk
       const token = employeeToken ?? (isSignedIn ? (await getToken()) : partnerToken);
       if (!token) throw new Error("Could not retrieve auth token.");
-      const policyBasePath = employeeToken ? "/v1/admin/policies" : "/v1/policies";
+      const policyBasePath = isEmployeeSession ? "/v1/admin/policies" : "/v1/partner/policies";
 
       const res = await fetchWithAuth(`${policyBasePath}/${policyId}`, token);
       if (!res.ok) {
@@ -121,7 +122,7 @@ export default function PolicyDetailsPage() {
       const token = employeeToken ?? (isSignedIn ? (await getToken()) : partnerToken);
       if (!token) throw new Error("Could not retrieve auth token.");
       if (!policyId) throw new Error("Missing policyId.");
-      const policyBasePath = employeeToken ? "/v1/admin/policies" : "/v1/policies";
+      const policyBasePath = isEmployeeSession ? "/v1/admin/policies" : "/v1/partner/policies";
 
       const res = await fetchWithAuth(`${policyBasePath}/${policyId}/download?format=${format}`, token);
       if (!res.ok) {
@@ -167,7 +168,7 @@ export default function PolicyDetailsPage() {
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-5xl mx-auto p-6">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-[#0B1F3B]">Please sign in</h2>
+            <h2 className="mb-2 text-lg font-semibold text-heading">Please sign in</h2>
             <p className="text-sm text-slate-600">Sign in to view policy details.</p>
           </div>
         </div>
@@ -180,7 +181,7 @@ export default function PolicyDetailsPage() {
       <main className="min-h-screen bg-slate-50">
         <div className="max-w-5xl mx-auto p-6">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-[#0B1F3B]">Access pending</h2>
+            <h2 className="mb-2 text-lg font-semibold text-heading">Access pending</h2>
             <p className="text-sm text-slate-600">Your account does not have access to policies yet.</p>
           </div>
         </div>
@@ -204,14 +205,14 @@ export default function PolicyDetailsPage() {
                 <span>Details</span>
               </div>
 
-              <h1 className="mt-4 inline-flex items-center gap-2 text-3xl font-semibold text-[#0B1F3B]">
+              <h1 className="mt-4 inline-flex items-center gap-2 text-3xl font-semibold text-heading">
                 <FileText className="h-7 w-7 text-[#0B5CAD]" />
                 Policy Details
               </h1>
 
               {policy ? (
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                  <span className="font-medium text-[#0B1F3B]">{policy.original_filename}</span>
+                  <span className="font-medium text-heading">{policy.original_filename}</span>
                   <span className="text-slate-300">•</span>
                   <span className="text-slate-500">{new Date(policy.created_at).toLocaleDateString()}</span>
                 </div>

@@ -35,7 +35,7 @@ const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 const statusConfig: Record<string, { bg: string; text: string; icon: string }> = {
   submitted: { bg: "bg-blue-50", text: "text-blue-700", icon: "📤" },
   in_review: { bg: "bg-sky-50", text: "text-sky-700", icon: "👁" },
-  approved: { bg: "bg-indigo-50", text: "text-indigo-700", icon: "✓" },
+  approved: { bg: "bg-blue-50", text: "text-[#0B5CAD]", icon: "✓" },
   rejected: { bg: "bg-slate-100", text: "text-slate-700", icon: "✗" },
 };
 
@@ -229,24 +229,24 @@ export default function AdminLeadsPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8 rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/40 p-8 shadow-sm">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <span className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white shadow-sm">
-                <Users className="h-3.5 w-3.5" />
-                Operations
-              </span>
-              <h1 className="mt-4 text-3xl font-semibold text-[#0B1F3B]">Manage Partner Leads</h1>
-              <p className="mt-2 text-sm text-slate-600">
-                Create, verify, and advance partner lead applications.
-              </p>
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white shadow-sm">
+              <Users className="h-3.5 w-3.5" />
+              Admin Console
+            </span>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <h1 className="text-3xl font-semibold text-heading">Manage Partner Leads</h1>
+              <Link
+                href="/become-partner?source=sales"
+                className="inline-flex items-center gap-1.5 rounded-sm bg-[#0B5CAD] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#0A4F95]"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Open POSP Form
+              </Link>
             </div>
-            <Link
-              href="/become-partner?source=sales"
-              className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#0B5CAD] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#0A4F95] transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Open POSP Form
-            </Link>
+            <p className="mt-2 text-sm text-slate-600">
+              Create, verify, and advance partner lead applications.
+            </p>
           </div>
           <div className="mt-8 flex flex-col gap-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -294,7 +294,7 @@ export default function AdminLeadsPage() {
         <div className="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100 bg-gradient-to-r from-[#EFF6FF] via-[#F8FBFF] to-white px-5 py-3">
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0B1F3B]">
+              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-heading">
                 <Users className="h-4 w-4 text-[#0B5CAD]" />
                 Recent Leads
               </span>
