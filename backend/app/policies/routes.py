@@ -39,7 +39,7 @@ def _get_current_approved_posp_application(
     return posp_application
 
 
-@router.post("/v1/policies/extract")
+@router.post("/v1/partner/policies/extract")
 async def extract_policy(
     file: UploadFile = File(...),
     posp_application: PospApplication = Depends(_get_current_approved_posp_application),
@@ -90,20 +90,45 @@ def _apply_date_filters(query, start_date: Optional[date], end_date: Optional[da
     return query
 
 
-def _serialize_policy_list_item(policy: Policy) -> dict:
+def _serialize_policy_list_item(policy: Policy, posp_application: Optional[PospApplication] = None) -> dict:
     return {
         "policy_id": str(policy.id),
         "original_filename": policy.original_filename,
         "created_at": policy.created_at.isoformat(),
         "has_extracted_json": policy.extracted_json is not None,
         "schema_version": policy.schema_version,
+        "partner_name": posp_application.full_name if posp_application else None,
+        "partner_display_id": posp_application.partner_display_id if posp_application else None,
     }
 
 
-def _list_policies_response(query, start_date: Optional[date], end_date: Optional[date]):
+def _list_policies_response(
+    query,
+    start_date: Optional[date],
+    end_date: Optional[date],
+    db: Session,
+    include_partner_meta: bool = False,
+):
     query = _apply_date_filters(query, start_date, end_date)
     policies = query.order_by(Policy.created_at.desc()).limit(200).all()
-    return {"items": [_serialize_policy_list_item(policy) for policy in policies]}
+
+    posp_map: dict[uuid.UUID, PospApplication] = {}
+    if include_partner_meta:
+        posp_application_ids = list({p.posp_application_id for p in policies if p.posp_application_id})
+        if posp_application_ids:
+            posp_rows = (
+                db.query(PospApplication)
+                .filter(PospApplication.id.in_(posp_application_ids))
+                .all()
+            )
+            posp_map = {row.id: row for row in posp_rows}
+
+    return {
+        "items": [
+            _serialize_policy_list_item(policy, posp_map.get(policy.posp_application_id))
+            for policy in policies
+        ]
+    }
 
 
 def _download_bulk_from_query(query, start_date: Optional[date], end_date: Optional[date], db: Session):
@@ -157,7 +182,7 @@ def get_job(job_id: uuid.UUID, posp_application: PospApplication = Depends(_get_
     }
 
 
-@router.get("/v1/policies")
+@router.get("/v1/partner/policies")
 def list_policies_for_partner(
     start_date: Optional[date] = Query(default=None, description="Filter policies created on or after this date (YYYY-MM-DD)"),
     end_date: Optional[date] = Query(default=None, description="Filter policies created on or before this date (YYYY-MM-DD)"),
@@ -165,7 +190,7 @@ def list_policies_for_partner(
     db: Session = Depends(get_db),
 ):
     query = db.query(Policy).filter(Policy.posp_application_id == posp_application.id)
-    return _list_policies_response(query, start_date, end_date)
+    return _list_policies_response(query, start_date, end_date, db)
 
 
 @router.get("/v1/admin/policies")
@@ -176,10 +201,10 @@ def list_policies_for_employee(
     db: Session = Depends(get_db),
 ):
     _ = employee
-    return _list_policies_response(db.query(Policy), start_date, end_date)
+    return _list_policies_response(db.query(Policy), start_date, end_date, db, include_partner_meta=True)
 
 
-@router.get("/v1/policies/download/bulk")
+@router.get("/v1/partner/policies/download/bulk")
 def download_policies_bulk_for_partner(
     start_date: Optional[date] = Query(default=None, description="Filter policies created on or after this date (YYYY-MM-DD)"),
     end_date: Optional[date] = Query(default=None, description="Filter policies created on or before this date (YYYY-MM-DD)"),
@@ -201,7 +226,7 @@ def download_policies_bulk_for_employee(
     return _download_bulk_from_query(db.query(Policy), start_date, end_date, db)
 
 
-@router.get("/v1/policies/{policy_id}")
+@router.get("/v1/partner/policies/{policy_id}")
 def get_policy_for_partner(
     policy_id: uuid.UUID,
     posp_application: PospApplication = Depends(_get_current_approved_posp_application),
@@ -244,7 +269,7 @@ def get_policy_for_employee(
     }
 
 
-@router.get("/v1/policies/{policy_id}/download")
+@router.get("/v1/partner/policies/{policy_id}/download")
 def download_policy_for_partner(
     policy_id: uuid.UUID,
     format: str = Query(default="json", pattern="^(json|csv|xlsx)$"),
