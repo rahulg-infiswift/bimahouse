@@ -34,7 +34,7 @@ export function LoginDropdown() {
         onClick={() => setIsOpen(!isOpen)}
         aria-haspopup="menu"
         aria-expanded={isOpen}
-        className="inline-flex items-center gap-1.5 rounded-sm border border-[#0A4DBA] bg-[#0B5CAD] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0A4F95]"
+        className="inline-flex items-center gap-1.5 rounded-sm border border-[#0B5CAD] bg-[#0B5CAD] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0A4F95]"
       >
         Login
         <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
@@ -55,7 +55,7 @@ export function LoginDropdown() {
                   <UserRound className="h-4 w-4" />
                 </div>
                 <div className="text-left">
-                  <div className="font-semibold text-[#0B1F3B]">Customer</div>
+                  <div className="font-semibold text-heading">Customer</div>
                   <div className="text-xs text-slate-500">Buy & manage your policies</div>
                 </div>
               </button>
@@ -69,7 +69,7 @@ export function LoginDropdown() {
                 <Briefcase className="h-4 w-4" />
               </div>
               <div className="text-left">
-                <div className="font-semibold text-[#0B1F3B]">Partner (POSP)</div>
+                <div className="font-semibold text-heading">Partner (POSP)</div>
               </div>
             </Link>
             <div className="my-1 border-t border-slate-100" />
@@ -82,7 +82,7 @@ export function LoginDropdown() {
                 <Building2 className="h-4 w-4" />
               </div>
               <div className="text-left">
-                <div className="font-semibold text-[#0B1F3B]">Employee</div>
+                <div className="font-semibold text-heading">Employee</div>
               </div>
             </Link>
           </div>

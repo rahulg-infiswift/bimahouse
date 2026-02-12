@@ -70,44 +70,44 @@ export default function AboutPage() {
             <Building2 className="h-3.5 w-3.5" />
             About Us
           </span>
-          <h1 className="mt-4 text-3xl font-bold text-[#0B1F3B] sm:text-4xl">Bima House Insurance Broking</h1>
-          <p className="mt-3 max-w-4xl text-base text-slate-600 sm:text-lg">
+          <h1 className="mt-4 text-3xl font-bold text-heading sm:text-4xl">Bima House Insurance Broking</h1>
+          <p className="mt-3 max-w-4xl text-base text-[#1F3B63] sm:text-lg">
             An IRDAI-licensed Direct Insurance Broker committed to delivering reliable insurance advisory and broking services across India.
           </p>
         </section>
 
         <section className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <h2 className="inline-flex items-center gap-2 text-xl font-bold text-[#0B1F3B]">
+          <h2 className="inline-flex items-center gap-2 text-xl font-bold text-heading">
             <HeartHandshake className="h-5 w-5 text-[#0B5CAD]" />
             Who We Are
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-600">
+          <p className="mt-4 text-sm leading-relaxed text-[#1F3B63]">
             Bima House Insurance Broking Private Limited is dedicated to helping individuals and businesses choose the right insurance solutions by working in their best interest and in strict compliance with IRDAI regulations.
           </p>
-          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+          <p className="mt-3 text-sm leading-relaxed text-[#1F3B63]">
             Led by experienced professionals, we focus on understanding client needs, offering unbiased insurance solutions, ensuring policy servicing and claims assistance, and maintaining the highest standards of ethics and compliance.
           </p>
-          <div className="mt-5 rounded-sm border border-blue-200 bg-blue-50 px-4 py-3 text-center text-sm font-medium text-blue-800">
+          <div className="mt-5 rounded-sm border border-blue-200 bg-blue-50 px-4 py-3 text-center text-sm font-medium text-[#1F3B63]">
             We do not represent any single insurance company. <span className="font-bold text-[#0B5CAD]">We represent you.</span>
           </div>
         </section>
 
         <section className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 className="inline-flex items-center gap-2 text-base font-semibold text-[#0B1F3B]">
+          <h3 className="inline-flex items-center gap-2 text-base font-semibold text-heading">
             <Mail className="h-4 w-4 text-[#0B5CAD]" />
             Contact Us
           </h3>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-sm border border-slate-200 bg-slate-50 px-3 py-2">
-              <p className="text-xs text-slate-500">Email</p>
-              <p className="text-sm font-medium text-[#0B1F3B]">info@bimahouseinsurance.in</p>
+              <p className="text-xs text-[#365A86]">Email</p>
+              <p className="text-sm font-medium text-heading">info@bimahouseinsurance.in</p>
             </div>
             <div className="rounded-sm border border-slate-200 bg-slate-50 px-3 py-2">
-              <p className="text-xs text-slate-500">Website</p>
-              <p className="text-sm font-medium text-[#0B1F3B]">www.bimahouseinsurance.in</p>
+              <p className="text-xs text-[#365A86]">Website</p>
+              <p className="text-sm font-medium text-heading">www.bimahouseinsurance.in</p>
             </div>
             <div className="rounded-sm border border-slate-200 bg-slate-50 px-3 py-2 sm:col-span-2">
-              <p className="inline-flex items-center gap-1 text-xs text-slate-500">
+              <p className="inline-flex items-center gap-1 text-xs text-[#365A86]">
                 <Phone className="h-3.5 w-3.5" />
                 Reach out for policy advisory and claims support
               </p>
@@ -117,22 +117,22 @@ export default function AboutPage() {
 
         <section className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <h2 className="inline-flex items-center gap-2 text-xl font-bold text-[#0B1F3B]">
+            <h2 className="inline-flex items-center gap-2 text-xl font-bold text-heading">
               <CircleGauge className="h-5 w-5 text-[#0B5CAD]" />
               Our Focus
             </h2>
             <div className="mt-5 grid gap-3">
               {focusItems.map((item) => (
                 <div key={item.title} className="rounded-sm border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-sm font-semibold text-[#0B1F3B]">{item.title}</p>
-                  <p className="mt-1 text-xs text-slate-600">{item.desc}</p>
+                  <p className="text-sm font-semibold text-heading">{item.title}</p>
+                  <p className="mt-1 text-xs text-[#1F3B63]">{item.desc}</p>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <h2 className="inline-flex items-center gap-2 text-xl font-bold text-[#0B1F3B]">
+            <h2 className="inline-flex items-center gap-2 text-xl font-bold text-heading">
               <ShieldCheck className="h-5 w-5 text-[#0B5CAD]" />
               Why Choose Us
             </h2>
@@ -140,7 +140,7 @@ export default function AboutPage() {
               {differentiators.map((item) => (
                 <div key={item} className="flex items-start gap-2 rounded-sm border border-slate-200 bg-slate-50 px-3 py-3">
                   <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#0B5CAD]" />
-                  <p className="text-xs font-medium text-slate-700">{item}</p>
+                  <p className="text-xs font-medium text-[#1F3B63]">{item}</p>
                 </div>
               ))}
             </div>
@@ -148,17 +148,17 @@ export default function AboutPage() {
         </section>
 
         <section className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <h2 className="inline-flex items-center gap-2 text-xl font-bold text-[#0B1F3B]">
+          <h2 className="inline-flex items-center gap-2 text-xl font-bold text-heading">
             <Sparkles className="h-5 w-5 text-[#0B5CAD]" />
             Our Services
           </h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {serviceItems.map((service) => (
               <div key={service.title} className="rounded-sm border border-slate-200 bg-white p-4">
-                <h3 className="text-base font-semibold text-[#0B1F3B]">{service.title}</h3>
+                <h3 className="text-base font-semibold text-heading">{service.title}</h3>
                 <ul className="mt-3 space-y-2">
                   {service.points.map((point) => (
-                    <li key={point} className="flex items-center gap-2 text-sm text-slate-600">
+                    <li key={point} className="flex items-center gap-2 text-sm text-[#1F3B63]">
                       <CheckCircle2 className="h-4 w-4 text-[#0B5CAD]" />
                       {point}
                     </li>
@@ -171,21 +171,21 @@ export default function AboutPage() {
 
         <section className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="inline-flex items-center gap-2 text-base font-semibold text-[#0B1F3B]">
+            <h3 className="inline-flex items-center gap-2 text-base font-semibold text-heading">
               <ShieldCheck className="h-4 w-4 text-[#0B5CAD]" />
               Privacy Policy
             </h3>
-            <p className="mt-3 text-xs leading-relaxed text-slate-600">
+            <p className="mt-3 text-xs leading-relaxed text-[#1F3B63]">
               We respect your privacy. Any personal information shared with us is used only for insurance advisory, servicing and regulatory compliance purposes and is not shared with any third party without consent, except as required by law or regulators.
             </p>
           </div>
 
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="inline-flex items-center gap-2 text-base font-semibold text-[#0B1F3B]">
+            <h3 className="inline-flex items-center gap-2 text-base font-semibold text-heading">
               <FileCheck2 className="h-4 w-4 text-[#0B5CAD]" />
               Terms & Conditions
             </h3>
-            <ul className="mt-3 space-y-1 text-xs text-slate-600">
+            <ul className="mt-3 space-y-1 text-xs text-[#1F3B63]">
               <li>Services are subject to IRDAI regulations.</li>
               <li>Policy issuance is at insurer discretion.</li>
               <li>The company does not guarantee policy approval or claims settlement.</li>

@@ -66,7 +66,7 @@ export default async function RootLayout({
     <ClerkProvider
       appearance={{
         elements: {
-          userButtonAvatarBox: "bg-[#0F5FCC] text-white",
+          userButtonAvatarBox: "bg-[#0B5CAD] text-white",
         },
       }}
     >
@@ -76,10 +76,10 @@ export default async function RootLayout({
             <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6">
               <div className="flex min-w-0 items-center gap-4">
                 <Link href="/" className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-sm bg-[#0A4DBA] shadow-sm">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-sm bg-[#0B5CAD] shadow-sm">
                     <ShieldCheck className="h-5 w-5 text-white" />
                   </div>
-                  <span className="text-lg font-bold text-[#0A4DBA]">Bima House</span>
+                  <span className="text-lg font-bold text-[#0B5CAD]">Bima House</span>
                 </Link>
                 
                 <nav className="hidden items-center gap-1 xl:flex">

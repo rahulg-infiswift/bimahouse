@@ -3,10 +3,11 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
-  --primary-light: #3b82f6;
-  --accent: #0ea5e9;
+  --heading: #0b1f3b;
+  --primary: #0b5cad;
+  --primary-dark: #0a4f95;
+  --primary-light: #eaf2ff;
+  --accent: #0b5cad;
   --success: #10b981;
   --success-light: #d1fae5;
   --warning: #f59e0b;
@@ -28,6 +29,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-heading: var(--heading);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -62,7 +64,7 @@ body {
 /* Form input focus states */
 input:focus, select:focus, textarea:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(11, 92, 173, 0.12);
 }
 
 /* Smooth transitions */
@@ -74,6 +76,6 @@ input:focus, select:focus, textarea:focus {
 
 /* Clerk avatar fallback initials in navbar */
 .cl-userButtonAvatarBox {
-  background-color: #0a4dba !important;
+  background-color: #0b5cad !important;
   color: #ffffff !important;
 }
