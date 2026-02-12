@@ -1,7 +1,7 @@
 import logging
-from typing import Optional
 
-import requests
+from twilio.base.exceptions import TwilioRestException
+from twilio.rest import Client
 
 from app.core.config import settings
 
@@ -17,15 +17,15 @@ def _twilio_send_sms(*, to_phone: str, body_text: str) -> None:
             "Twilio SMS not configured. Set TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_FROM_NUMBER."
         )
 
-    url = f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"
-    data = {
-        "To": _normalize_phone(to_phone),
-        "From": from_number,
-        "Body": body_text,
-    }
-    resp = requests.post(url, data=data, auth=(sid, token), timeout=20)
-    if not resp.ok:
-        raise RuntimeError(f"Twilio SMS failed: {resp.status_code} {resp.text}")
+    client = Client(sid, token)
+    try:
+        client.messages.create(
+            body=body_text,
+            from_=from_number,
+            to=_normalize_phone(to_phone),
+        )
+    except TwilioRestException as exc:
+        raise RuntimeError(f"Twilio SMS failed: {exc.status} {exc.msg}") from exc
 
 
 def send_sms(*, to_phone: str, body_text: str) -> None:
