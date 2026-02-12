@@ -3,6 +3,18 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Briefcase,
+  CheckCircle2,
+  FileText,
+  Handshake,
+  KeyRound,
+  Loader2,
+  Phone,
+  ShieldCheck,
+} from "lucide-react";
 import { setPartnerToken, getPartnerToken, PartnerInfo } from "../../lib/partner-auth";
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
@@ -94,42 +106,60 @@ export default function PartnerLoginPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-12rem)] flex items-center justify-center py-12 px-4 sm:px-6">
-      <div className="w-full max-w-md">
-        {/* Header with icon */}
-        <div className="text-center mb-8">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-200 mb-4">
-            <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
+    <main className="min-h-[calc(100vh-12rem)] px-4 py-12 sm:px-6">
+      <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[1.1fr_420px]">
+        <section className="rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/30 p-8 text-[#0B1F3B] shadow-sm sm:p-10">
+          <span className="inline-flex items-center rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
+            Partner Access
+          </span>
+          <div className="mt-4 flex h-16 w-16 items-center justify-center rounded-sm border border-blue-200 bg-[#EAF2FF]">
+            <Briefcase className="h-8 w-8 text-[#0B5CAD]" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Partner Login</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Access your POSP partner dashboard
-          </p>
-        </div>
+          <h1 className="mt-6 text-3xl font-bold leading-tight text-[#0B5CAD] sm:text-4xl">Partner Login</h1>
+          <p className="mt-3 text-sm text-slate-600 sm:text-base">Access your POSP dashboard to manage your business with Bima House.</p>
+          <div className="mt-6 space-y-3 text-sm text-slate-700">
+            <p className="inline-flex w-full items-center gap-2 rounded-sm border border-blue-100 bg-white px-3 py-2">
+              <Handshake className="h-4 w-4 text-[#0B5CAD]" />
+              Track partner leads and customer handoffs
+            </p>
+            <p className="inline-flex w-full items-center gap-2 rounded-sm border border-blue-100 bg-white px-3 py-2">
+              <FileText className="h-4 w-4 text-[#0B5CAD]" />
+              Access uploaded policies and application records
+            </p>
+            <p className="inline-flex w-full items-center gap-2 rounded-sm border border-blue-100 bg-white px-3 py-2">
+              <ShieldCheck className="h-4 w-4 text-[#0B5CAD]" />
+              Work through compliant partner workflows
+            </p>
+          </div>
+          <div className="mt-8 text-sm">
+            <Link href="/" className="inline-flex items-center gap-1 text-[#0B5CAD] hover:text-[#0A4F95]">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to Home
+            </Link>
+          </div>
+        </section>
 
-        {/* Login Form */}
-        <form
-          onSubmit={otpRequested ? verifyOtp : requestOtp}
-          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-        >
+        <section className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+          <span className="inline-flex items-center rounded-sm bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#0B5CAD]">
+            Partner Sign In
+          </span>
+          <h2 className="text-xl font-semibold text-[#0B1F3B]">Sign In</h2>
+          <p className="mt-1 text-sm text-slate-500">Use your registered partner mobile number.</p>
+          <form onSubmit={otpRequested ? verifyOtp : requestOtp} className="mt-5">
           <label className="block">
             <span className="text-sm font-medium text-slate-700">
               Registered Phone Number
             </span>
             <div className="relative mt-2">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
+                <Phone className="h-5 w-5" />
               </span>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="e.g. 9876543210"
-                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-colors"
+                className="w-full rounded-sm border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
                 disabled={busy || otpRequested}
               />
             </div>
@@ -140,9 +170,7 @@ export default function PartnerLoginPage() {
               <span className="text-sm font-medium text-slate-700">Enter OTP</span>
               <div className="relative mt-2">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
+                  <KeyRound className="h-5 w-5" />
                 </span>
                 <input
                   type="text"
@@ -151,7 +179,7 @@ export default function PartnerLoginPage() {
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   placeholder="6-digit OTP"
-                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-colors"
+                  className="w-full rounded-sm border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
                   disabled={busy}
                   autoFocus
                 />
@@ -160,19 +188,15 @@ export default function PartnerLoginPage() {
           )}
 
           {error && (
-            <div className="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              <svg className="h-5 w-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+            <div className="mt-4 flex items-start gap-2 rounded-sm border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {notice && (
-            <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              <svg className="h-5 w-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+            <div className="mt-4 flex items-start gap-2 rounded-sm border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-[#0B5CAD]">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#0B5CAD]" />
               <span>{notice}</span>
             </div>
           )}
@@ -181,14 +205,11 @@ export default function PartnerLoginPage() {
             <button
               type="submit"
               disabled={busy}
-              className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-emerald-200 hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-60 transition-all"
+              className="w-full rounded-sm bg-[#0B5CAD] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#0A4F95] disabled:opacity-60 transition-colors"
             >
               {busy ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Please wait...
                 </span>
               ) : otpRequested ? (
@@ -207,36 +228,25 @@ export default function PartnerLoginPage() {
                   setError("");
                   setNotice("");
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                className="w-full rounded-sm border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 Change Phone Number
               </button>
             )}
           </div>
-        </form>
+          </form>
 
-        {/* Footer links */}
-        <div className="mt-6 text-center text-sm">
-          <Link href="/" className="text-slate-600 hover:text-slate-900 transition-colors">
-            ← Back to Home
-          </Link>
-        </div>
-
-        {/* Not a partner CTA */}
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center">
-          <p className="text-sm text-slate-600">
-            Not a partner yet?
-          </p>
-          <Link
-            href="/become-partner"
-            className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
-          >
-            Apply to become a POSP Partner
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </Link>
-        </div>
+          <div className="mt-7 rounded-sm border border-blue-100 bg-[#F5F9FF] p-4 text-center">
+            <p className="text-sm text-slate-600">Not a partner yet?</p>
+            <Link
+              href="/become-partner"
+              className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-[#0B5CAD] hover:text-[#0A4F95] transition-colors"
+            >
+              Apply to become a POSP Partner
+              <ShieldCheck className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
       </div>
     </main>
   );

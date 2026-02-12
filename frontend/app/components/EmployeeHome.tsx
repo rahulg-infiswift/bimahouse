@@ -2,6 +2,15 @@
 
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
+import {
+  ArrowRight,
+  Briefcase,
+  ClipboardList,
+  FileText,
+  ShieldCheck,
+  ShieldUser,
+  Users,
+} from "lucide-react";
 import { UserRole, isAdminRole } from "../lib/roles";
 import { useEmployeeSession } from "../lib/use-employee-session";
 
@@ -9,160 +18,163 @@ interface EmployeeHomeProps {
   role: UserRole | null;
 }
 
+function getRoleDisplayName(role: UserRole | null): string {
+  if (!role) return "Employee";
+  const roleNames: Record<string, string> = {
+    sales: "Sales Executive",
+    arm_rm: "ARM / RM",
+    manager: "Manager",
+    area_manager: "Area Manager",
+    zonal_head: "Zonal Head",
+    admin: "Administrator",
+  };
+  return roleNames[role] || "Employee";
+}
+
 export default function EmployeeHome({ role }: EmployeeHomeProps) {
   const { user } = useUser();
   const { employeeInfo } = useEmployeeSession();
-  const emailName = employeeInfo?.primary_email?.split("@")[0];
-  const firstName = user?.firstName || emailName || "Team Member";
+
+  const employeeName = employeeInfo?.full_name?.trim();
+  const firstName = employeeName || user?.firstName || "Team Member";
   const effectiveRole = role ?? ((employeeInfo?.role as UserRole | undefined) ?? null);
   const showAdminLink = isAdminRole(effectiveRole);
 
-  // Format role for display
-  const getRoleDisplayName = (role: UserRole | null) => {
-    if (!role) return "Employee";
-    const roleNames: Record<string, string> = {
-      sales: "Sales Executive",
-      arm_rm: "ARM / RM",
-      manager: "Manager",
-      area_manager: "Area Manager",
-      zonal_head: "Zonal Head",
-      admin: "Administrator",
-    };
-    return roleNames[role] || "Employee";
-  };
-
   return (
-    <div className="py-8 px-4 sm:px-6">
+    <div className="px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        {/* Personalized Welcome */}
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-            Welcome back, <span className="text-indigo-600">{firstName}</span>!
+        <section className="rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/30 p-8 shadow-sm">
+          <span className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
+            <ShieldUser className="h-3.5 w-3.5" />
+            Employee Workspace
+          </span>
+          <h1 className="mt-4 text-3xl font-semibold text-[#0B1F3B]">
+            Welcome back, <span className="text-[#0B5CAD]">{firstName}</span>
           </h1>
-          <p className="text-slate-600 mt-1">
-            {getRoleDisplayName(effectiveRole)} Dashboard
-          </p>
-        </div>
+          <p className="mt-2 text-sm text-slate-600">{getRoleDisplayName(effectiveRole)} Dashboard</p>
+        </section>
 
-        {/* Quick Actions Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-          <Link href="/leads" className="group rounded-xl border border-slate-200 bg-white p-6 hover:shadow-lg hover:border-indigo-300 transition-all">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
+        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Link
+            href="/leads"
+            className="group rounded-sm border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
+                <Briefcase className="h-5 w-5" />
               </div>
-              <div>
-                <h3 className="font-semibold text-slate-900">Partner Leads</h3>
-                <p className="text-sm text-indigo-600 font-medium">Review Applications →</p>
+              <div className="min-w-0">
+                <h3 className="text-base font-semibold text-[#0B1F3B]">Partner Leads</h3>
+                <p className="mt-1 text-sm text-slate-600">Review submitted POSP applications.</p>
+                <p className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[#0B5CAD]">
+                  Open workspace
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </p>
               </div>
             </div>
           </Link>
 
-          {showAdminLink && (
-            <Link href="/admin" className="group rounded-xl border border-slate-200 bg-white p-6 hover:shadow-lg hover:border-violet-300 transition-all">
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-violet-100 text-violet-600 group-hover:bg-violet-600 group-hover:text-white transition-colors">
-                  <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
+          <Link
+            href="/policies"
+            className="group rounded-sm border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
+                <FileText className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-base font-semibold text-[#0B1F3B]">Policy Library</h3>
+                <p className="mt-1 text-sm text-slate-600">Browse and access uploaded policy files.</p>
+                <p className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[#0B5CAD]">
+                  View policies
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </p>
+              </div>
+            </div>
+          </Link>
+
+          {showAdminLink ? (
+            <Link
+              href="/admin"
+              className="group rounded-sm border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold text-[#0B1F3B]">Manage Users</h3>
+                  <p className="mt-1 text-sm text-slate-600">Configure customer access and roles.</p>
+                  <p className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[#0B5CAD]">
+                    Open admin
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </p>
+                </div>
+              </div>
+            </Link>
+          ) : (
+            <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
+                  <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">User Management</h3>
-                  <p className="text-sm text-violet-600 font-medium">Manage Roles →</p>
+                  <h3 className="text-base font-semibold text-[#0B1F3B]">Secure Access</h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Your dashboard permissions are based on your employee role.
+                  </p>
                 </div>
               </div>
-            </Link>
+            </div>
           )}
+        </section>
 
-          <Link href="/policies" className="group rounded-xl border border-slate-200 bg-white p-6 hover:shadow-lg hover:border-sky-300 transition-all">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-sky-100 text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors">
-                <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900">All Policies</h3>
-                <p className="text-sm text-sky-600 font-medium">Browse Uploads →</p>
-              </div>
+        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total Leads</span>
+              <Briefcase className="h-4 w-4 text-[#0B5CAD]" />
             </div>
-          </Link>
-        </div>
-
-        {/* Stats Overview */}
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Overview</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-              </div>
-              <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">Active</span>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">—</p>
-            <p className="text-sm text-slate-500">Total Leads</p>
+            <p className="mt-3 text-2xl font-semibold text-[#0B1F3B]">—</p>
           </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">Pending</span>
+          <div className="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">In Review</span>
+              <ClipboardList className="h-4 w-4 text-[#0B5CAD]" />
             </div>
-            <p className="text-2xl font-bold text-slate-900">—</p>
-            <p className="text-sm text-slate-500">Pending Review</p>
+            <p className="mt-3 text-2xl font-semibold text-[#0B1F3B]">—</p>
           </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">Approved</span>
+          <div className="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Approved</span>
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
             </div>
-            <p className="text-2xl font-bold text-slate-900">—</p>
-            <p className="text-sm text-slate-500">Approved This Month</p>
+            <p className="mt-3 text-2xl font-semibold text-[#0B1F3B]">—</p>
           </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <span className="text-xs font-medium text-sky-600 bg-sky-50 px-2 py-1 rounded-full">Total</span>
+          <div className="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Policies Processed</span>
+              <FileText className="h-4 w-4 text-[#0B5CAD]" />
             </div>
-            <p className="text-2xl font-bold text-slate-900">—</p>
-            <p className="text-sm text-slate-500">Policies Processed</p>
+            <p className="mt-3 text-2xl font-semibold text-[#0B1F3B]">—</p>
           </div>
-        </div>
+        </section>
 
-        {/* Recent Activity Section */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">Recent Activity</h2>
-            <Link href="/leads" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-              View All →
+        <section className="mt-8 rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[#0B1F3B]">Recent Activity</h2>
+            <Link href="/leads" className="text-sm font-medium text-[#0B5CAD] hover:text-[#0A4F95]">
+              View all
             </Link>
           </div>
-          <div className="text-center py-8 text-slate-500">
-            <svg className="h-12 w-12 mx-auto text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <p className="text-sm">No recent activity to show</p>
-            <p className="text-xs text-slate-400 mt-1">Partner applications and policy uploads will appear here</p>
+          <div className="mt-6 rounded-sm border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center">
+            <ClipboardList className="mx-auto h-8 w-8 text-slate-400" />
+            <p className="mt-3 text-sm font-medium text-slate-700">No recent activity to show</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Partner applications and policy updates will appear here.
+            </p>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

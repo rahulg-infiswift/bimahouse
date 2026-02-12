@@ -7,6 +7,7 @@ const EMPLOYEE_SESSION_EVENT = "bimahouse:employee-session-changed";
 export interface EmployeeInfo {
   user_id: string;
   role: string;
+  full_name?: string | null;
   primary_email?: string | null;
 }
 
