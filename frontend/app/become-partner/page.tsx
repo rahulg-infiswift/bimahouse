@@ -44,7 +44,7 @@ export default function BecomePartnerPage() {
 
     const trimmedName = fullName.trim();
     const trimmedEmail = email.trim();
-    const trimmedPhone = phone.trim();
+    const phoneDigits = phone.replace(/\D/g, "");
     const trimmedPan = (profile.pan_number || "").trim().toUpperCase();
 
     if (!trimmedName) {
@@ -55,7 +55,7 @@ export default function BecomePartnerPage() {
       setError("Please enter a valid email address.");
       return;
     }
-    if (!trimmedPhone || !/^\d{10}$/.test(trimmedPhone.replace(/\D/g, ""))) {
+    if (!phoneDigits || !/^\d{10}$/.test(phoneDigits)) {
       setError("Please enter a valid 10-digit phone number.");
       return;
     }
@@ -78,16 +78,44 @@ export default function BecomePartnerPage() {
 
     setSubmitting(true);
     try {
+      const phoneE164 = `+91${phoneDigits}`;
+      const payload: Record<string, string | number> = {
+        full_name: trimmedName,
+        email: trimmedEmail,
+        phone: phoneE164,
+      };
+
+      if (trimmedPan) payload.pan_number = trimmedPan;
+
+      const stringFields: Array<keyof PospApplicationFields> = [
+        "date_of_birth",
+        "gender",
+        "address_line1",
+        "address_line2",
+        "city",
+        "state",
+        "pincode",
+        "business_location",
+        "preferred_products",
+        "bank_name",
+        "account_holder_name",
+        "account_number",
+        "ifsc_code",
+        "branch_name",
+        "aadhaar_number",
+      ];
+      for (const field of stringFields) {
+        const value = (profile[field] || "").trim();
+        if (value) payload[field] = value;
+      }
+
+      const expRaw = (profile.current_insurance_experience || "").trim();
+      if (expRaw) payload.current_insurance_experience = Number(expRaw);
+
       const res = await fetch(`${API}/v1/public/partner-applications`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          full_name: trimmedName,
-          email: trimmedEmail,
-          phone: trimmedPhone,
-          ...profile,
-          pan_number: trimmedPan || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
