@@ -16,10 +16,10 @@ export function NavLink({ href, label, icon }: NavLinkProps) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-[14px] font-semibold transition-colors whitespace-nowrap ${
+      className={`flex items-center gap-2 rounded-sm px-3.5 py-2 text-[13px] font-semibold transition-colors whitespace-nowrap ${
         isActive
-          ? "bg-blue-50 text-blue-700"
-          : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"
+          ? "bg-[#E8F0FE] text-[#0B1F3B]"
+          : "text-slate-700 hover:bg-[#F0F5FF] hover:text-[#0B1F3B]"
       }`}
     >
       {icon ? <span className="shrink-0">{icon}</span> : null}
@@ -35,10 +35,10 @@ export function MobileNavLink({ href, icon }: { href: string; icon: React.ReactN
   return (
     <Link
       href={href}
-      className={`inline-flex shrink-0 items-center justify-center rounded-lg p-2 transition-colors ${
+      className={`inline-flex shrink-0 items-center justify-center rounded-sm p-2 transition-colors ${
         isActive
-          ? "bg-blue-50 text-blue-700"
-          : "text-slate-600 hover:bg-slate-100"
+          ? "bg-[#E8F0FE] text-[#0B1F3B]"
+          : "text-slate-700 hover:bg-[#F0F5FF] hover:text-[#0B1F3B]"
       }`}
     >
       {icon}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Briefcase, CircleCheckBig, FileUp, ShieldCheck, UserRound } from "lucide-react";
 import PospApplicationForm, {
   emptyPospApplicationFields,
   PospApplicationFields,
@@ -138,30 +139,37 @@ export default function BecomePartnerPage() {
   return (
     <main className="py-12 px-4 sm:px-6">
       <div className="mx-auto max-w-5xl">
-        <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 p-8 shadow-sm mb-8">
-          <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white shadow-sm">
+        <div className="mb-8 rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/40 p-8 shadow-sm">
+          <span className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
+            <Briefcase className="h-3.5 w-3.5" />
             Partner Network
           </span>
-          <h1 className="mt-4 text-3xl font-semibold text-slate-900">Become a Bima House Partner</h1>
-          <p className="mt-2 text-sm text-slate-600 max-w-3xl">
+          <h1 className="mt-4 text-3xl font-semibold text-[#0B1F3B]">Become a Bima House Partner</h1>
+          <p className="mt-2 max-w-3xl text-sm text-slate-600">
             Join our partner network and grow your insurance business with structured onboarding, product support, and claims assistance.
           </p>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">POSP Application Form</h2>
+        <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-[#0B1F3B]">POSP Application Form</h2>
           <p className="mt-1 text-sm text-slate-600">Fill the form below and submit your application.</p>
-          <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800">
-            Required fields: Full Name, Email, Phone, Business Location.
+          <div className="mt-4 rounded-sm border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-900">
+            <span className="inline-flex items-center gap-2 font-medium">
+              <ShieldCheck className="h-4 w-4" />
+              Required fields: Full Name, Email, Phone, Business Location.
+            </span>
           </div>
 
           <form onSubmit={submit} className="mt-6 grid gap-4 sm:grid-cols-2">
             <label className="sm:col-span-2">
-              <span className="text-xs font-medium text-slate-600">Full Name *</span>
+              <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
+                <UserRound className="h-3.5 w-3.5" />
+                Full Name *
+              </span>
               <input
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className="mt-2 w-full rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
                 placeholder="Your full name"
               />
             </label>
@@ -171,7 +179,7 @@ export default function BecomePartnerPage() {
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className="mt-2 w-full rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
                 placeholder="name@example.com"
               />
             </label>
@@ -181,7 +189,7 @@ export default function BecomePartnerPage() {
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className="mt-2 w-full rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
                 placeholder="10-digit mobile number"
               />
             </label>
@@ -196,8 +204,11 @@ export default function BecomePartnerPage() {
               />
             </div>
 
-            <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-              <h3 className="text-sm font-semibold text-slate-700">Document Attachments</h3>
+            <div className="sm:col-span-2 rounded-sm border border-slate-200 bg-slate-50/60 p-4">
+              <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[#0B1F3B]">
+                <FileUp className="h-4 w-4 text-[#0B5CAD]" />
+                Document Attachments
+              </h3>
               <p className="mt-1 text-xs text-slate-500">Upload clear scans/photos for verification.</p>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 {[
@@ -213,7 +224,7 @@ export default function BecomePartnerPage() {
                     <input
                       type="file"
                       accept="image/*,.pdf"
-                      className="mt-2 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-slate-800"
+                      className="mt-2 block w-full text-xs text-slate-600 file:mr-3 file:rounded-sm file:border-0 file:bg-[#0B5CAD] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-[#0A4F95]"
                       onChange={(e) =>
                         setDocuments((prev) => ({
                           ...prev,
@@ -228,14 +239,17 @@ export default function BecomePartnerPage() {
             </div>
 
             {error && (
-              <div className="sm:col-span-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+              <div className="sm:col-span-2 rounded-sm border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="sm:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                Application submitted successfully. Reference ID: <span className="font-semibold">{success.lead_display_id}</span>
+              <div className="sm:col-span-2 rounded-sm border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                <span className="inline-flex items-center gap-2">
+                  <CircleCheckBig className="h-4 w-4" />
+                  Application submitted successfully. Reference ID: <span className="font-semibold">{success.lead_display_id}</span>
+                </span>
               </div>
             )}
 
@@ -243,7 +257,7 @@ export default function BecomePartnerPage() {
               <button
                 type="submit"
                 disabled={submitting || uploading}
-                className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-white shadow-md shadow-blue-200 hover:bg-blue-700 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-white shadow-sm hover:bg-[#0A4F95] disabled:opacity-60"
               >
                 {uploading ? "Uploading..." : submitting ? "Submitting..." : "Submit Application"}
               </button>

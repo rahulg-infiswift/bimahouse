@@ -1,5 +1,7 @@
 "use client";
 
+import { Building2, CreditCard, FileBadge2, UserRound } from "lucide-react";
+
 export type PospApplicationFields = {
   date_of_birth?: string;
   gender?: string;
@@ -70,8 +72,8 @@ export default function PospApplicationForm({
   const wrap = compact ? "mt-4 space-y-4" : "mt-6 space-y-6";
   const label = "text-xs font-medium text-slate-600";
   const input = compact
-    ? "mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-    : "mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+    ? "mt-1 w-full rounded-sm border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    : "mt-1 w-full rounded-sm border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
   const requiredSet = new Set(requiredFields);
   const isRequired = (field: keyof PospApplicationFields) => required || requiredSet.has(field);
   const req = (field: keyof PospApplicationFields) => (isRequired(field) ? " *" : "");
@@ -79,7 +81,10 @@ export default function PospApplicationForm({
   return (
     <div className={wrap}>
       <div>
-        <h3 className="mb-2 text-sm font-medium text-slate-700">Professional Details</h3>
+        <h3 className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#0B1F3B]">
+          <Building2 className="h-4 w-4 text-[#0B5CAD]" />
+          Professional Details
+        </h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
             <span className={label}>Business Location{req("business_location")}</span>
@@ -129,7 +134,10 @@ export default function PospApplicationForm({
       </div>
 
       <div>
-        <h3 className="mb-2 text-sm font-medium text-slate-700">Personal Details</h3>
+        <h3 className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#0B1F3B]">
+          <UserRound className="h-4 w-4 text-[#0B5CAD]" />
+          Personal Details
+        </h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
             <span className={label}>Date of Birth{req("date_of_birth")}</span>
@@ -227,7 +235,10 @@ export default function PospApplicationForm({
       </div>
 
       <div>
-        <h3 className="mb-2 text-sm font-medium text-slate-700">Identity Documents</h3>
+        <h3 className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#0B1F3B]">
+          <FileBadge2 className="h-4 w-4 text-[#0B5CAD]" />
+          Identity Documents
+        </h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
             <span className={label}>PAN Number{req("pan_number")}</span>
@@ -259,7 +270,10 @@ export default function PospApplicationForm({
       </div>
 
       <div>
-        <h3 className="mb-2 text-sm font-medium text-slate-700">Bank Details</h3>
+        <h3 className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-[#0B1F3B]">
+          <CreditCard className="h-4 w-4 text-[#0B5CAD]" />
+          Bank Details
+        </h3>
         <div className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
