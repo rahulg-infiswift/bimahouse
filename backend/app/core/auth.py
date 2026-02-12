@@ -1,19 +1,30 @@
-from typing import Optional, Union
 from dataclasses import dataclass
 import logging
-import requests
-from jose import jwk, jwt, JWTError
+from typing import Optional
+import uuid
+
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwk, jwt
 from jose.utils import base64url_decode
-from fastapi import Header, HTTPException, Depends
+import requests
 from sqlalchemy.orm import Session
+
+from app.core.clerk_client import get_primary_email_and_verified
 from app.core.config import settings
 from app.core.db import get_db
-from app.users.models import User, Role
-from app.core.clerk_client import get_primary_email_and_verified
+from app.employees.models import Employee, EmployeeRole
+from app.users.models import Role, User
 
 logger = logging.getLogger(__name__)
 
 _jwks_cache = {"keys": None}
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/employee-auth/verify-otp", auto_error=False)
+
+
+# -----------------------------
+# Token verification helpers
+# -----------------------------
 
 def _get_jwks():
     if not settings.clerk_jwks_url:
@@ -23,6 +34,7 @@ def _get_jwks():
         resp.raise_for_status()
         _jwks_cache["keys"] = resp.json().get("keys", [])
     return _jwks_cache["keys"]
+
 
 def _verify_clerk_jwt(token: str) -> str:
     keys = _get_jwks()
@@ -49,7 +61,6 @@ def _verify_clerk_jwt(token: str) -> str:
         raise HTTPException(status_code=401, detail="Invalid token (bad signature)")
 
     claims = jwt.get_unverified_claims(token)
-
     if settings.clerk_issuer and claims.get("iss") != settings.clerk_issuer:
         raise HTTPException(status_code=401, detail="Invalid token (issuer mismatch)")
 
@@ -59,7 +70,29 @@ def _verify_clerk_jwt(token: str) -> str:
     return user_id
 
 
-def _verify_partner_jwt(token: str) -> str:
+def _verify_employee_jwt(token: str) -> uuid.UUID:
+    secret = settings.employee_jwt_secret
+    if not secret:
+        raise HTTPException(status_code=500, detail="Employee auth not configured: EMPLOYEE_JWT_SECRET missing")
+    try:
+        claims = jwt.decode(token, secret, algorithms=["HS256"], options={"verify_aud": False})
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail="Invalid employee token") from exc
+
+    if claims.get("typ") != "employee":
+        raise HTTPException(status_code=401, detail="Invalid employee token type")
+
+    employee_id = claims.get("sub")
+    if not employee_id:
+        raise HTTPException(status_code=401, detail="Invalid employee token (missing subject)")
+
+    try:
+        return uuid.UUID(str(employee_id))
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=401, detail="Invalid employee token (bad subject)") from exc
+
+
+def _verify_partner_jwt(token: str) -> uuid.UUID:
     secret = settings.partner_jwt_secret
     if not secret:
         raise HTTPException(status_code=500, detail="Partner auth not configured: PARTNER_JWT_SECRET missing")
@@ -68,26 +101,21 @@ def _verify_partner_jwt(token: str) -> str:
     except JWTError as exc:
         raise HTTPException(status_code=401, detail="Invalid partner token") from exc
 
-    token_type = claims.get("typ")
-    if token_type != "partner":
+    if claims.get("typ") != "partner":
         raise HTTPException(status_code=401, detail="Invalid partner token type")
 
     partner_application_id = claims.get("sub")
     if not partner_application_id:
         raise HTTPException(status_code=401, detail="Invalid partner token (missing subject)")
-    return partner_application_id
+    try:
+        return uuid.UUID(str(partner_application_id))
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=401, detail="Invalid partner token (bad subject)") from exc
 
-async def get_current_user_id(
-    authorization: Optional[str] = Header(default=None),
-) -> str:
-    if settings.env == "dev" and settings.dev_user_id and not authorization:
-        return settings.dev_user_id
 
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Missing Authorization Bearer token")
-
-    token = authorization.split(" ", 1)[1].strip()
-    return _verify_clerk_jwt(token)
+# -----------------------------
+# Record helpers
+# -----------------------------
 
 def _ensure_user_record(user_id: str, db: Session) -> User:
     user = db.query(User).filter(User.id == user_id).first()
@@ -114,12 +142,25 @@ def _ensure_user_record(user_id: str, db: Session) -> User:
     db.commit()
     return user
 
-async def get_current_user(
-    user_id: str = Depends(get_current_user_id),
-    db: Session = Depends(get_db),
+
+def _get_active_employee_by_id(employee_id: uuid.UUID, db: Session) -> Optional[Employee]:
+    return db.query(Employee).filter(Employee.id == employee_id, Employee.is_active.is_(True)).first()
+
+
+# -----------------------------
+# User auth dependencies (Clerk)
+# -----------------------------
+
+async def get_current_user_id(
+    token: Optional[str] = Depends(oauth2_scheme),
 ) -> str:
-    _ensure_user_record(user_id, db)
-    return user_id
+    if settings.env == "dev" and settings.dev_user_id and not token:
+        return settings.dev_user_id
+
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing Authorization Bearer token")
+    return _verify_clerk_jwt(token)
+
 
 async def get_current_user_record(
     user_id: str = Depends(get_current_user_id),
@@ -127,35 +168,64 @@ async def get_current_user_record(
 ) -> User:
     return _ensure_user_record(user_id, db)
 
-def require_roles(*roles: str):
-    async def _require(user: User = Depends(get_current_user_record)) -> User:
-        if user.role not in roles:
+
+# -----------------------------
+# Employee auth dependencies
+# -----------------------------
+
+async def get_current_active_employee_record(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> Employee:
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing Authorization Bearer token")
+
+    employee_id = _verify_employee_jwt(token)
+    employee = _get_active_employee_by_id(employee_id, db)
+    if not employee:
+        raise HTTPException(status_code=401, detail="Employee account not found")
+    return employee
+
+
+def require_employee_roles(*roles: str):
+    async def _require(employee: Employee = Depends(get_current_active_employee_record)) -> Employee:
+        if employee.role not in roles:
             raise HTTPException(status_code=403, detail="Insufficient role")
-        return user
+        return employee
+
     return _require
 
-def require_employee_user():
-    return require_roles(*Role.employee_roles())
 
+def require_any_employee_role():
+    return require_employee_roles(*EmployeeRole.all_roles())
+
+
+# -----------------------------
+# Partner auth dependency
+# -----------------------------
 
 async def get_current_posp_application_id(
-    authorization: Optional[str] = Header(default=None),
-) -> str:
-    if not authorization or not authorization.lower().startswith("bearer "):
+    token: Optional[str] = Depends(oauth2_scheme),
+) -> uuid.UUID:
+    if not token:
         raise HTTPException(status_code=401, detail="Missing Authorization Bearer token")
-    token = authorization.split(" ", 1)[1].strip()
     return _verify_partner_jwt(token)
 
 
+# -----------------------------
+# Shared policy access
+# -----------------------------
+
 @dataclass
 class PolicyAccess:
-    """Represents who is accessing policies - either an employee (User) or a partner (posp_application_id)."""
-    user: Optional[User] = None
-    posp_application_id: Optional[str] = None
+    """Represents who is accessing policies - either an employee or a partner."""
+
+    employee: Optional[Employee] = None
+    posp_application_id: Optional[uuid.UUID] = None
 
     @property
     def is_employee(self) -> bool:
-        return self.user is not None and self.user.role in Role.employee_roles()
+        return self.employee is not None
 
     @property
     def is_partner(self) -> bool:
@@ -163,38 +233,29 @@ class PolicyAccess:
 
 
 async def get_policy_access(
-    authorization: Optional[str] = Header(default=None),
+    token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> PolicyAccess:
     """
     Flexible auth dependency for policies that handles both:
-    - Clerk tokens (for employees viewing all policies)
-    - Partner tokens (for partners viewing their own policies)
-    
-    First tries Clerk, then partner JWT.
+    - Employee tokens (view all policies)
+    - Partner tokens (view own policies)
     """
-    if not authorization or not authorization.lower().startswith("bearer "):
+    if not token:
         raise HTTPException(status_code=401, detail="Missing Authorization Bearer token")
 
-    token = authorization.split(" ", 1)[1].strip()
-
-    # Try Clerk token first (for employees)
     try:
-        user_id = _verify_clerk_jwt(token)
-        user = _ensure_user_record(user_id, db)
-        # Check if user has employee role - they can see all policies
-        if user.role in Role.employee_roles():
-            return PolicyAccess(user=user)
-        # Non-employee Clerk users (customers) shouldn't see policies via this route
-        # They would need their own policy purchase flow in the future
-        raise HTTPException(status_code=403, detail="Customers cannot access partner policies")
-    except HTTPException as clerk_exc:
-        # If it's not a Clerk token or user doesn't have access, try partner token
-        if clerk_exc.status_code == 403:
-            raise  # Re-raise permission errors immediately
-        pass  # Continue to try partner token
+        employee_id = _verify_employee_jwt(token)
+        employee = _get_active_employee_by_id(employee_id, db)
+        if not employee:
+            raise HTTPException(status_code=401, detail="Employee account not found")
+        if employee.role not in EmployeeRole.all_roles():
+            raise HTTPException(status_code=403, detail="Insufficient role")
+        return PolicyAccess(employee=employee)
+    except HTTPException as employee_exc:
+        if employee_exc.status_code == 403:
+            raise
 
-    # Try partner token
     try:
         posp_application_id = _verify_partner_jwt(token)
         return PolicyAccess(posp_application_id=posp_application_id)

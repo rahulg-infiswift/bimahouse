@@ -13,17 +13,6 @@ def utcnow() -> datetime:
 
 class Role:
     CUSTOMER = "customer"
-    PARTNER = "partner"
-    SALES = "sales"
-    ARM_RM = "arm_rm"
-    MANAGER = "manager"
-    AREA_MANAGER = "area_manager"
-    ZONAL_HEAD = "zonal_head"
-    ADMIN = "admin"
-
-    @classmethod
-    def employee_roles(cls) -> set[str]:
-        return {cls.SALES, cls.ARM_RM, cls.MANAGER, cls.AREA_MANAGER, cls.ZONAL_HEAD, cls.ADMIN}
 
 
 class User(Base):

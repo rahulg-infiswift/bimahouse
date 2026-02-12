@@ -6,12 +6,14 @@ import sys
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))  # noqa
 
 from app.partners.routes import router as partner_router
 from app.policies.routes import router as policy_router
 from app.users.routes import router as users_router
+from app.employees.routes import router as employees_router
 
 
 Path("logs").mkdir(exist_ok=True)
@@ -55,6 +57,7 @@ app.add_middleware(
 app.include_router(partner_router)
 app.include_router(policy_router)
 app.include_router(users_router)
+app.include_router(employees_router)
 
 
 @app.get("/v1/health", tags=["Health"])
@@ -63,6 +66,4 @@ def health():
 
 
 if __name__ == "__main__":
-    import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8000)

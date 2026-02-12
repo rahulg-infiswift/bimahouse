@@ -4,6 +4,7 @@ from typing import Optional
 import secrets
 import hashlib
 import re
+import uuid
 
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -12,9 +13,9 @@ from jose import jwt
 
 from app.core.config import settings
 from app.core.db import get_db
-from app.core.auth import require_employee_user
+from app.core.auth import require_any_employee_role
+from app.employees.models import Employee, EmployeeRole
 from app.partners.models import PospApplication, PospApplicationDocument, LeadStatus, LeadSource, DocType
-from app.users.models import Role, User
 from app.partners.schemas import (
     PospApplicationCreateIn, PospApplicationCreateOut,
     PospApplicationSummaryOut, PospApplicationListItem, PospApplicationDetailOut,
@@ -84,7 +85,7 @@ def _find_approved_posp_application_by_phone(db: Session, phone: str) -> Optiona
     )
 
 
-def _issue_partner_token(partner_application_id: str) -> tuple[str, int]:
+def _issue_partner_token(partner_application_id: uuid.UUID) -> tuple[str, int]:
     secret = settings.partner_jwt_secret
     if not secret:
         raise HTTPException(status_code=500, detail="Partner auth not configured: PARTNER_JWT_SECRET missing")
@@ -92,7 +93,7 @@ def _issue_partner_token(partner_application_id: str) -> tuple[str, int]:
     now = int(datetime.now(timezone.utc).timestamp())
     exp = now + (exp_minutes * 60)
     payload = {
-        "sub": partner_application_id,
+        "sub": str(partner_application_id),
         "role": "partner",
         "typ": "partner",
         "iat": now,
@@ -292,13 +293,24 @@ def _create_posp_application_record(
     )
 
 
+def _validate_posp_application_payload(payload: PospApplicationCreateIn) -> None:
+    """Shared field validation for both internal and public POSP application creation."""
+    if payload.aadhaar_number and not payload.aadhaar_number.isdigit():
+        raise HTTPException(status_code=422, detail="Aadhaar number must contain only digits.")
+    if payload.aadhaar_number and len(payload.aadhaar_number) != 12:
+        raise HTTPException(status_code=422, detail="Aadhaar number must be 12 digits.")
+    if payload.pincode and (not payload.pincode.isdigit() or len(payload.pincode) != 6):
+        raise HTTPException(status_code=422, detail="Pincode must be 6 digits.")
+
+
 # -------------------------
 # Admin endpoints
 # -------------------------
 
+@router.get("/v1/posp-applications/summary", response_model=PospApplicationSummaryOut)
 @router.get("/v1/leads/summary", response_model=PospApplicationSummaryOut)
-def leads_summary(
-    user: User = Depends(require_employee_user()),
+def posp_applications_summary(
+    employee: Employee = Depends(require_any_employee_role()),
     db: Session = Depends(get_db),
 ):
 
@@ -316,10 +328,11 @@ def leads_summary(
     )
 
 
+@router.get("/v1/posp-applications", response_model=list[PospApplicationListItem])
 @router.get("/v1/leads", response_model=list[PospApplicationListItem])
-def list_leads(
+def list_posp_applications(
     status: Optional[str] = Query(default=None),
-    user: User = Depends(require_employee_user()),
+    employee: Employee = Depends(require_any_employee_role()),
     db: Session = Depends(get_db),
 ):
 
@@ -347,12 +360,14 @@ def list_leads(
     ]
 
 
+@router.post("/v1/posp-applications", response_model=PospApplicationCreateOut)
 @router.post("/v1/leads", response_model=PospApplicationCreateOut)
-def create_lead(
+def create_posp_application(
     payload: PospApplicationCreateIn,
-    user: User = Depends(require_employee_user()),
+    employee: Employee = Depends(require_any_employee_role()),
     db: Session = Depends(get_db),
 ):
+    _validate_posp_application_payload(payload)
     return _create_posp_application_record(
         db,
         full_name=payload.full_name,
@@ -366,16 +381,11 @@ def create_lead(
 
 
 @router.post("/v1/public/partner-applications", response_model=PospApplicationCreateOut, tags=["Public"])
-def create_public_partner_application(
+def create_public_posp_application(
     payload: PospApplicationCreateIn,
     db: Session = Depends(get_db),
 ):
-    if payload.aadhaar_number and not payload.aadhaar_number.isdigit():
-        raise HTTPException(status_code=422, detail="Aadhaar number must contain only digits.")
-    if payload.aadhaar_number and len(payload.aadhaar_number) != 12:
-        raise HTTPException(status_code=422, detail="Aadhaar number must be 12 digits.")
-    if payload.pincode and (not payload.pincode.isdigit() or len(payload.pincode) != 6):
-        raise HTTPException(status_code=422, detail="Pincode must be 6 digits.")
+    _validate_posp_application_payload(payload)
 
     # Public applications are considered submitted for internal review.
     return _create_posp_application_record(
@@ -464,7 +474,7 @@ def verify_partner_login_otp(
     posp_application.updated_at = utcnow()
     db.commit()
 
-    access_token, expires_in = _issue_partner_token(str(posp_application.id))
+    access_token, expires_in = _issue_partner_token(posp_application.id)
 
     return PartnerLoginVerifyOut(
         access_token=access_token,
@@ -476,10 +486,11 @@ def verify_partner_login_otp(
     )
 
 
+@router.get("/v1/posp-applications/{application_id}", response_model=PospApplicationDetailOut)
 @router.get("/v1/leads/{application_id}", response_model=PospApplicationDetailOut)
-def get_lead(
+def get_posp_application(
     application_id: str,
-    user: User = Depends(require_employee_user()),
+    employee: Employee = Depends(require_any_employee_role()),
     db: Session = Depends(get_db),
 ):
 
@@ -490,10 +501,12 @@ def get_lead(
     return _lead_to_detail(db, posp_application)
 
 
+# Email OTP verfication
+@router.post("/v1/posp-applications/{application_id}/send-otp", response_model=OtpSendOut)
 @router.post("/v1/leads/{application_id}/send-otp", response_model=OtpSendOut)
-def send_otp(
+def send_posp_application_email_otp(
     application_id: str,
-    user: User = Depends(require_employee_user()),
+    employee: Employee = Depends(require_any_employee_role()),
     db: Session = Depends(get_db),
 ):
 
@@ -532,11 +545,12 @@ def send_otp(
     )
 
 
+@router.post("/v1/posp-applications/{application_id}/verify-otp", response_model=OtpVerifyOut)
 @router.post("/v1/leads/{application_id}/verify-otp", response_model=OtpVerifyOut)
-def verify_otp(
+def verify_posp_application_email_otp(
     application_id: str,
     payload: OtpVerifyIn,
-    user: User = Depends(require_employee_user()),
+    employee: Employee = Depends(require_any_employee_role()),
     db: Session = Depends(get_db),
 ):
 
@@ -577,11 +591,12 @@ def verify_otp(
     return OtpVerifyOut(application_id=str(posp_application.id), status=posp_application.status, email_verified=True)
 
 
+@router.patch("/v1/posp-applications/{application_id}", response_model=PospApplicationDetailOut)
 @router.patch("/v1/leads/{application_id}", response_model=PospApplicationDetailOut)
-def update_lead(
+def update_posp_application(
     application_id: str,
     payload: AdminPospApplicationUpdateIn,
-    user: User = Depends(require_employee_user()),
+    employee: Employee = Depends(require_any_employee_role()),
     db: Session = Depends(get_db),
 ):
 
@@ -590,9 +605,9 @@ def update_lead(
         raise HTTPException(status_code=404, detail="Lead not found")
 
     assign_partner_number = False
-    is_admin = user.role == Role.ADMIN
-    is_sales = user.role == Role.SALES
-    is_reviewer = user.role in {Role.ARM_RM, Role.MANAGER, Role.AREA_MANAGER, Role.ZONAL_HEAD, Role.ADMIN}
+    is_admin = employee.role == EmployeeRole.ADMIN
+    is_sales = employee.role == EmployeeRole.SALES
+    is_reviewer = employee.role in {EmployeeRole.ARM_RM, EmployeeRole.MANAGER, EmployeeRole.AREA_MANAGER, EmployeeRole.ZONAL_HEAD, EmployeeRole.ADMIN}
 
     if payload.status is not None:
         allowed = {
@@ -673,12 +688,13 @@ def update_lead(
     return _lead_to_detail(db, partner_application)
 
 
+@router.post("/v1/posp-applications/{application_id}/documents")
 @router.post("/v1/leads/{application_id}/documents")
 async def upload_doc(
     application_id: str,
     doc_type: str = Query(..., description="aadhaar|pan|marksheet_10|cancelled_cheque|photo|other"),
     file: UploadFile = File(...),
-    user: User = Depends(require_employee_user()),
+    employee: Employee = Depends(require_any_employee_role()),
     db: Session = Depends(get_db),
 ):
 

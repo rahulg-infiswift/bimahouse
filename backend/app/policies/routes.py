@@ -27,7 +27,7 @@ queue = Queue(settings.rq_queue_name, connection=redis_conn)
 
 
 def _get_current_approved_posp_application(
-    posp_application_id: str = Depends(get_current_posp_application_id),
+    posp_application_id: uuid.UUID = Depends(get_current_posp_application_id),
     db: Session = Depends(get_db),
 ) -> PospApplication:
     posp_application = db.query(PospApplication).filter(PospApplication.id == posp_application_id).first()

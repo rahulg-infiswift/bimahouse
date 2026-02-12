@@ -16,6 +16,7 @@ from app.core.config import settings
 from app.policies import models as policy_models  # noqa: F401
 from app.partners import models as partner_models  # noqa: F401
 from app.users import models as user_models  # noqa: F401
+from app.employees import models as employee_models  # noqa: F401
 
 # this is the Alembic Config object
 config = context.config
