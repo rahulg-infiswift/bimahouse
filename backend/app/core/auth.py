@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 import logging
 from typing import Optional
 import uuid
@@ -19,7 +18,9 @@ from app.users.models import Role, User
 logger = logging.getLogger(__name__)
 
 _jwks_cache = {"keys": None}
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/employee-auth/verify-otp", auto_error=False)
+clerk_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/users/me", auto_error=False)
+employee_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/employee-auth/verify-otp", auto_error=False)
+partner_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/partner-auth/verify-otp", auto_error=False)
 
 
 # -----------------------------
@@ -152,7 +153,7 @@ def _get_active_employee_by_id(employee_id: uuid.UUID, db: Session) -> Optional[
 # -----------------------------
 
 async def get_current_user_id(
-    token: Optional[str] = Depends(oauth2_scheme),
+    token: Optional[str] = Depends(clerk_oauth2_scheme),
 ) -> str:
     if settings.env == "dev" and settings.dev_user_id and not token:
         return settings.dev_user_id
@@ -174,7 +175,7 @@ async def get_current_user_record(
 # -----------------------------
 
 async def get_current_active_employee_record(
-    token: Optional[str] = Depends(oauth2_scheme),
+    token: Optional[str] = Depends(employee_oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> Employee:
     if not token:
@@ -205,59 +206,8 @@ def require_any_employee_role():
 # -----------------------------
 
 async def get_current_posp_application_id(
-    token: Optional[str] = Depends(oauth2_scheme),
+    token: Optional[str] = Depends(partner_oauth2_scheme),
 ) -> uuid.UUID:
     if not token:
         raise HTTPException(status_code=401, detail="Missing Authorization Bearer token")
     return _verify_partner_jwt(token)
-
-
-# -----------------------------
-# Shared policy access
-# -----------------------------
-
-@dataclass
-class PolicyAccess:
-    """Represents who is accessing policies - either an employee or a partner."""
-
-    employee: Optional[Employee] = None
-    posp_application_id: Optional[uuid.UUID] = None
-
-    @property
-    def is_employee(self) -> bool:
-        return self.employee is not None
-
-    @property
-    def is_partner(self) -> bool:
-        return self.posp_application_id is not None
-
-
-async def get_policy_access(
-    token: Optional[str] = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
-) -> PolicyAccess:
-    """
-    Flexible auth dependency for policies that handles both:
-    - Employee tokens (view all policies)
-    - Partner tokens (view own policies)
-    """
-    if not token:
-        raise HTTPException(status_code=401, detail="Missing Authorization Bearer token")
-
-    try:
-        employee_id = _verify_employee_jwt(token)
-        employee = _get_active_employee_by_id(employee_id, db)
-        if not employee:
-            raise HTTPException(status_code=401, detail="Employee account not found")
-        if employee.role not in EmployeeRole.all_roles():
-            raise HTTPException(status_code=403, detail="Insufficient role")
-        return PolicyAccess(employee=employee)
-    except HTTPException as employee_exc:
-        if employee_exc.status_code == 403:
-            raise
-
-    try:
-        posp_application_id = _verify_partner_jwt(token)
-        return PolicyAccess(posp_application_id=posp_application_id)
-    except HTTPException as partner_exc:
-        raise HTTPException(status_code=401, detail="Invalid token") from partner_exc

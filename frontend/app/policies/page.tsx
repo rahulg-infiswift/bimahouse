@@ -101,12 +101,13 @@ export default function PoliciesPage() {
       // Clerk users (including employees) use Clerk token; only use partner token if not signed in via Clerk
       const authToken = employeeToken ?? (isSignedIn ? (await getToken()) : partnerToken);
       if (!authToken) throw new Error("Could not retrieve auth token.");
+      const policyBasePath = employeeToken ? "/v1/admin/policies" : "/v1/policies";
 
       const params = new URLSearchParams();
       if (startDate) params.append("start_date", startDate);
       if (endDate) params.append("end_date", endDate);
       const queryString = params.toString();
-      const url = `/v1/policies${queryString ? `?${queryString}` : ""}`;
+      const url = `${policyBasePath}${queryString ? `?${queryString}` : ""}`;
 
       const res = await fetchWithAuth(url, authToken);
       if (!res.ok) {
@@ -132,12 +133,13 @@ export default function PoliciesPage() {
       // Clerk users (including employees) use Clerk token; only use partner token if not signed in via Clerk
       const authToken = employeeToken ?? (isSignedIn ? (await getToken()) : partnerToken);
       if (!authToken) throw new Error("Could not retrieve auth token.");
+      const policyBasePath = employeeToken ? "/v1/admin/policies" : "/v1/policies";
 
       const params = new URLSearchParams();
       if (startDate) params.append("start_date", startDate);
       if (endDate) params.append("end_date", endDate);
       const queryString = params.toString();
-      const url = `/v1/policies/download/bulk${queryString ? `?${queryString}` : ""}`;
+      const url = `${policyBasePath}/download/bulk${queryString ? `?${queryString}` : ""}`;
 
       const res = await fetchWithAuth(url, authToken);
 

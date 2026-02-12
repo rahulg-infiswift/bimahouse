@@ -96,8 +96,9 @@ export default function PolicyDetailsPage() {
       // Clerk users use Clerk token; only use partner token if not signed in via Clerk
       const token = employeeToken ?? (isSignedIn ? (await getToken()) : partnerToken);
       if (!token) throw new Error("Could not retrieve auth token.");
+      const policyBasePath = employeeToken ? "/v1/admin/policies" : "/v1/policies";
 
-      const res = await fetchWithAuth(`/v1/policies/${policyId}`, token);
+      const res = await fetchWithAuth(`${policyBasePath}/${policyId}`, token);
       if (!res.ok) {
         const t = await res.text();
         throw new Error(`Get policy failed: ${res.status} ${t}`);
@@ -119,8 +120,9 @@ export default function PolicyDetailsPage() {
       const token = employeeToken ?? (isSignedIn ? (await getToken()) : partnerToken);
       if (!token) throw new Error("Could not retrieve auth token.");
       if (!policyId) throw new Error("Missing policyId.");
+      const policyBasePath = employeeToken ? "/v1/admin/policies" : "/v1/policies";
 
-      const res = await fetchWithAuth(`/v1/policies/${policyId}/download?format=${format}`, token);
+      const res = await fetchWithAuth(`${policyBasePath}/${policyId}/download?format=${format}`, token);
       if (!res.ok) {
         const t = await res.text();
         throw new Error(`Download failed: ${res.status} ${t}`);
