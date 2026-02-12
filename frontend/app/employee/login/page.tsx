@@ -5,17 +5,30 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AlertCircle, ArrowLeft, Building2, CheckCircle2, KeyRound, Loader2, Phone, ShieldUser, Workflow, Users } from "lucide-react";
 import { getEmployeeToken, setEmployeeToken, EmployeeInfo } from "../../lib/employee-auth";
+import CountryCodeSelect from "../../components/CountryCodeSelect";
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const COUNTRY_OPTIONS = [
+  { code: "+91", label: "India (+91)", shortLabel: "🇮🇳 +91", digits: 10 },
+  { code: "+1", label: "United States (+1)", shortLabel: "🇺🇸 +1", digits: 10 },
+] as const;
 
 export default function EmployeeLoginPage() {
   const router = useRouter();
+  const [countryCode, setCountryCode] = useState<(typeof COUNTRY_OPTIONS)[number]["code"]>("+91");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpRequested, setOtpRequested] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const selectedCountry = COUNTRY_OPTIONS.find((option) => option.code === countryCode) ?? COUNTRY_OPTIONS[0];
+
+  function getPhoneE164(): string | null {
+    const nationalNumber = phone.replace(/\D/g, "");
+    if (nationalNumber.length !== selectedCountry.digits) return null;
+    return `${countryCode}${nationalNumber}`;
+  }
 
   useEffect(() => {
     if (getEmployeeToken()) {
@@ -27,8 +40,9 @@ export default function EmployeeLoginPage() {
     e.preventDefault();
     setError("");
     setNotice("");
-    if (!phone.trim()) {
-      setError("Enter your registered phone number.");
+    const phoneE164 = getPhoneE164();
+    if (!phoneE164) {
+      setError(`Enter a valid ${selectedCountry.digits}-digit phone number.`);
       return;
     }
 
@@ -37,7 +51,7 @@ export default function EmployeeLoginPage() {
       const res = await fetch(`${API}/v1/employee-auth/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim() }),
+        body: JSON.stringify({ phone: phoneE164 }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -60,8 +74,9 @@ export default function EmployeeLoginPage() {
     e.preventDefault();
     setError("");
     setNotice("");
-    if (!phone.trim() || !otp.trim()) {
-      setError("Enter phone number and OTP.");
+    const phoneE164 = getPhoneE164();
+    if (!phoneE164 || !otp.trim()) {
+      setError(`Enter a valid ${selectedCountry.digits}-digit phone number and OTP.`);
       return;
     }
 
@@ -70,7 +85,7 @@ export default function EmployeeLoginPage() {
       const res = await fetch(`${API}/v1/employee-auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim(), otp: otp.trim() }),
+        body: JSON.stringify({ phone: phoneE164, otp: otp.trim() }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -98,7 +113,7 @@ export default function EmployeeLoginPage() {
   return (
     <main className="min-h-[calc(100vh-12rem)] px-4 py-12 sm:px-6">
       <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[1.1fr_420px]">
-        <section className="rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/30 p-8 text-[#0B1F3B] shadow-sm sm:p-10">
+        <section className="hidden rounded-sm border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/30 p-8 text-[#0B1F3B] shadow-sm sm:p-10 lg:block">
           <span className="inline-flex items-center rounded-sm bg-[#0B5CAD] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
             Internal Access
           </span>
@@ -133,23 +148,33 @@ export default function EmployeeLoginPage() {
           <span className="inline-flex items-center rounded-sm bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#0B5CAD]">
             Employee Sign In
           </span>
-          <h2 className="text-xl font-semibold text-[#0B1F3B]">Sign In</h2>
+          <h2 className="mt-2 text-xl font-semibold text-[#0B1F3B]">Sign In</h2>
           <p className="mt-1 text-sm text-slate-500">Use your registered employee mobile number.</p>
           <form onSubmit={otpRequested ? verifyOtp : requestOtp} className="mt-5">
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Registered Phone Number</span>
-            <div className="relative mt-2">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <Phone className="h-5 w-5" />
-              </span>
+            <div className="mt-2 grid grid-cols-[102px_1fr] gap-2">
+              <CountryCodeSelect
+                options={COUNTRY_OPTIONS}
+                value={countryCode}
+                onChange={(next) => setCountryCode(next as (typeof COUNTRY_OPTIONS)[number]["code"])}
+                disabled={busy || otpRequested}
+              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Phone className="h-5 w-5" />
+                </span>
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g. +919876543210"
+                onChange={(e) =>
+                  setPhone(e.target.value.replace(/\D/g, "").slice(0, selectedCountry.digits))
+                }
+                placeholder={`Enter ${selectedCountry.digits}-digit number`}
                 className="w-full rounded-sm border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
                 disabled={busy || otpRequested}
               />
+              </div>
             </div>
           </label>
 
