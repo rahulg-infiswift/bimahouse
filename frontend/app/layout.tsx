@@ -8,7 +8,7 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
-import { isAdminRole, isEmployeeRole, UserRole } from "./lib/roles";
+import { isAdminRole, isEmployeeRole, SessionRole } from "./lib/roles";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PartnerDesktopNav, PartnerMobileNav, PartnerUserButton } from "./components/PartnerNavLinks";
 import { EmployeeDesktopNav, EmployeeMobileNav, EmployeeUserButton } from "./components/EmployeeNavLinks";
@@ -33,33 +33,19 @@ export const metadata: Metadata = {
   description: "Upload insurance policy PDFs and extract structured data",
 };
 
-async function getUserRole(): Promise<UserRole | null> {
-  const { userId, getToken } = await auth();
-  if (!userId) return null;
-  const token = await getToken();
-  if (!token) return null;
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-  const res = await fetch(`${apiBase}/v1/users/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-  const data = (await res.json()) as { role?: UserRole };
-  return data.role ?? null;
-}
-
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const role = await getUserRole();
-  // Only partner + employee roles get policy/support navigation for now.
-  const showPolicyLinks = role === "partner" || isEmployeeRole(role);
+  const { userId } = await auth();
+  const role: SessionRole | null = userId ? "customer" : null;
+  // On the server, Clerk session is customer-only. Partner/employee nav is handled by client OTP session components.
+  const showPolicyLinks = isEmployeeRole(role);
   const policyLabel = isEmployeeRole(role) ? "All Policies" : "My Policies";
   const showLeadsLink = isEmployeeRole(role);
   const showAdminLink = isAdminRole(role);
-  const showSupportLink = role === "partner";
+  const showSupportLink = false;
   const showAboutLink = !isEmployeeRole(role);
 
   return (

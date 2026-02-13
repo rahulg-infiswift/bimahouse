@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { UserRole, isAdminRole } from "../lib/roles";
+import { SessionRole, UserRole, isAdminRole } from "../lib/roles";
 import { useEmployeeSession } from "../lib/use-employee-session";
 import { AlertCircle, CheckCircle2, RefreshCw, Search, ShieldUser, Users } from "lucide-react";
 
@@ -16,7 +16,7 @@ type UserOut = {
 };
 
 type AdminUsersClientProps = {
-  initialRole: UserRole | null;
+  initialRole: SessionRole | null;
 };
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
@@ -31,7 +31,7 @@ function formatDate(value: string): string {
 export default function AdminUsersClient({ initialRole }: AdminUsersClientProps) {
   const { getToken, isSignedIn } = useAuth();
   const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
-  const [currentRole, setCurrentRole] = useState<UserRole | null>(initialRole ?? null);
+  const [currentRole, setCurrentRole] = useState<SessionRole | null>(initialRole ?? null);
   const [users, setUsers] = useState<UserOut[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,22 +50,15 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
     async function fetchRole() {
       if (!employeeReady) return;
       if (employeeToken && employeeInfo?.role) {
-        if (active) setCurrentRole(employeeInfo.role as UserRole);
+        if (active) setCurrentRole(employeeInfo.role as SessionRole);
         return;
       }
       if (!isSignedIn) {
         setCurrentRole(null);
         return;
       }
-      const token = await getAuthToken();
-      if (!token) return;
-      const res = await fetch(`${apiBase}/v1/users/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
-      if (!res.ok) return;
-      const data = (await res.json()) as { role?: UserRole };
-      if (active) setCurrentRole(data.role ?? null);
+      // Clerk-authenticated users are customer-only for UI role handling.
+      if (active) setCurrentRole("customer");
     }
     fetchRole();
     return () => {

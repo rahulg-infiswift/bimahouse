@@ -21,7 +21,7 @@ type PartnerPolicyItem = {
   has_extracted_json: boolean;
 };
 
-export default function PartnerDashboard() {
+export default function PartnerHome() {
   const { user } = useUser();
   const { partnerInfo, partnerToken } = usePartnerSession();
   const [totalPolicies, setTotalPolicies] = useState<number | null>(null);

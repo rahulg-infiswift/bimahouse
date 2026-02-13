@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { FileUp } from "lucide-react";
-import { fetchUserRole, isEmployeeRole, UserRole } from "../../lib/roles";
+import { SessionRole, isEmployeeRole } from "../../lib/roles";
 import { useEmployeeSession } from "../../lib/use-employee-session";
 import PospApplicationForm, {
   emptyPospApplicationFields,
@@ -70,7 +70,7 @@ export default function AdminLeadDetailPage() {
   const { getToken, isSignedIn } = useAuth();
   const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
 
-  const [role, setRole] = useState<UserRole | null>(null);
+  const [role, setRole] = useState<SessionRole | null>(null);
   const [data, setData] = useState<LeadDetail | null>(null);
   const [profile, setProfile] = useState<PospApplicationFields>(emptyPospApplicationFields);
   const [status, setStatus] = useState<string>("submitted");
@@ -94,17 +94,14 @@ export default function AdminLeadDetailPage() {
     async function loadRole() {
       if (!employeeReady) return;
       if (employeeToken && employeeInfo?.role) {
-        if (active) setRole(employeeInfo.role as UserRole);
+        if (active) setRole(employeeInfo.role as SessionRole);
         return;
       }
       if (!isSignedIn) {
         setRole(null);
         return;
       }
-      const token = await getToken();
-      if (!token) return;
-      const nextRole = await fetchUserRole(API, token);
-      if (active) setRole(nextRole);
+      if (active) setRole("customer");
     }
     void loadRole();
     return () => {

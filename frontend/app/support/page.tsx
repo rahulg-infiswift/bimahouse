@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { AlertCircle, Headset, Mail, MessageSquareText, Send, ShieldCheck } from "lucide-react";
-import { canAccessPolicies, fetchUserRole, UserRole } from "../lib/roles";
+import { SessionRole, canAccessPolicies } from "../lib/roles";
 import { usePartnerSession } from "../lib/use-partner-session";
 
 const SUPPORT_EMAIL = "support@bimahouse.com";
@@ -22,7 +22,7 @@ export default function SupportPage() {
     []
   );
 
-  const [role, setRole] = useState<UserRole | null>(null);
+  const [role, setRole] = useState<SessionRole | null>(null);
   const { partnerToken, partnerReady } = usePartnerSession();
   const [userEmail, setUserEmail] = useState<string>("");
   const [form, setForm] = useState<SupportForm>({
@@ -45,9 +45,8 @@ export default function SupportPage() {
       if (isSignedIn) {
         const token = await getToken();
         if (!token) return;
-        const nextRole = await fetchUserRole(apiBase, token);
         if (!active) return;
-        setRole(nextRole);
+        setRole("customer");
         try {
           const res = await fetch(`${apiBase}/v1/users/me`, {
             headers: { Authorization: `Bearer ${token}` },

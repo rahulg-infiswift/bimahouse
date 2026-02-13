@@ -14,11 +14,11 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { UserRole, isAdminRole } from "../lib/roles";
+import { SessionRole, isAdminRole } from "../lib/roles";
 import { useEmployeeSession } from "../lib/use-employee-session";
 
 interface EmployeeHomeProps {
-  role: UserRole | null;
+  role: SessionRole | null;
 }
 type LeadSummary = {
   submitted: number;
@@ -29,7 +29,7 @@ type LeadSummary = {
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
-function getRoleDisplayName(role: UserRole | null): string {
+function getRoleDisplayName(role: SessionRole | null): string {
   if (!role) return "Employee";
   const roleNames: Record<string, string> = {
     sales: "Sales Executive",
@@ -54,8 +54,8 @@ export default function EmployeeHome({ role }: EmployeeHomeProps) {
   });
 
   const employeeName = employeeInfo?.full_name?.trim();
-  const firstName = employeeName || user?.firstName || "Team Member";
-  const effectiveRole = role ?? ((employeeInfo?.role as UserRole | undefined) ?? null);
+  const displayName = employeeName || user?.fullName || user?.firstName || "Team Member";
+  const effectiveRole = role ?? ((employeeInfo?.role as SessionRole | undefined) ?? null);
   const showAdminLink = isAdminRole(effectiveRole);
   const counts = useMemo(() => {
     const totalLeads = summary.submitted + summary.in_review + summary.approved + summary.rejected;
@@ -100,7 +100,7 @@ export default function EmployeeHome({ role }: EmployeeHomeProps) {
             Admin Console
           </span>
           <h1 className="mt-4 text-3xl font-semibold text-heading">
-            Welcome back, <span className="text-[#0B5CAD]">{firstName}</span>
+            Welcome back, <span className="text-[#0B5CAD]">{displayName}</span>
           </h1>
           <p className="mt-2 text-sm text-slate-600">{getRoleDisplayName(effectiveRole)} Dashboard</p>
         </section>

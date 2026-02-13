@@ -49,7 +49,7 @@ const recommendedPlans = [
 
 export default function CustomerHome() {
   const { user } = useUser();
-  const firstName = user?.firstName || "there";
+  const displayName = user?.fullName || user?.firstName || "there";
 
   return (
     <div className="px-4 py-10 sm:px-6">
@@ -57,7 +57,7 @@ export default function CustomerHome() {
         <section className="rounded-sm border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
           <p className="text-xs font-semibold uppercase tracking-wide text-[#0B5CAD]">Customer Dashboard</p>
           <h1 className="mt-2 text-3xl font-bold text-heading sm:text-4xl">
-            Welcome back, <span className="text-[#0B5CAD]">{firstName}</span>
+            Welcome back, <span className="text-[#0B5CAD]">{displayName}</span>
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
             Explore plans, compare options, and manage coverage from one place.

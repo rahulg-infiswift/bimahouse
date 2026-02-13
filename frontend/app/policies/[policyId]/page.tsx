@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { ArrowLeft, Download, FileText, RefreshCw, ShieldCheck } from "lucide-react";
 import PolicyViewer from "./PolicyViewer";
-import { canAccessPolicies, fetchUserRole, isEmployeeRole, UserRole } from "../../lib/roles";
+import { SessionRole, canAccessPolicies, isEmployeeRole } from "../../lib/roles";
 import { usePartnerSession } from "../../lib/use-partner-session";
 import { useEmployeeSession } from "../../lib/use-employee-session";
 
@@ -36,7 +36,7 @@ export default function PolicyDetailsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>("");
   const [policy, setPolicy] = useState<PolicyResp | null>(null);
-  const [role, setRole] = useState<UserRole | null>(null);
+  const [role, setRole] = useState<SessionRole | null>(null);
   const isEmployeeSession = Boolean(employeeToken) || isEmployeeRole(role);
 
   async function fetchWithAuth(path: string, token: string, init?: RequestInit) {
@@ -54,7 +54,7 @@ export default function PolicyDetailsPage() {
     async function loadRole() {
       if (!partnerReady || !employeeReady) return;
       if (employeeToken && employeeInfo?.role) {
-        if (active) setRole(employeeInfo.role as UserRole);
+        if (active) setRole(employeeInfo.role as SessionRole);
         return;
       }
       if (!isSignedIn && !partnerToken) {
@@ -63,10 +63,7 @@ export default function PolicyDetailsPage() {
       }
       // Clerk users (including employees) use Clerk token to fetch their role
       if (isSignedIn) {
-        const token = await getToken();
-        if (!token) return;
-        const nextRole = await fetchUserRole(apiBase, token);
-        if (active) setRole(nextRole);
+        if (active) setRole("customer");
         return;
       }
       // Only use partner token if not signed in via Clerk

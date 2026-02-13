@@ -16,7 +16,7 @@ import {
   Zap,
   XCircle,
 } from "lucide-react";
-import { canAccessPolicies, fetchUserRole, UserRole } from "../lib/roles";
+import { SessionRole, canAccessPolicies } from "../lib/roles";
 import { usePartnerSession } from "../lib/use-partner-session";
 import { useEmployeeSession } from "../lib/use-employee-session";
 
@@ -47,7 +47,7 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>("");
-  const [role, setRole] = useState<UserRole | null>(null);
+  const [role, setRole] = useState<SessionRole | null>(null);
   const { partnerToken, partnerReady } = usePartnerSession();
 
   const [extractResp, setExtractResp] = useState<ExtractResponse | null>(null);
@@ -69,7 +69,7 @@ export default function UploadPage() {
     async function loadRole() {
       if (!partnerReady || !employeeReady) return;
       if (employeeToken && employeeInfo?.role) {
-        if (active) setRole(employeeInfo.role as UserRole);
+        if (active) setRole(employeeInfo.role as SessionRole);
         return;
       }
       if (!isSignedIn && !partnerToken) {
@@ -78,10 +78,7 @@ export default function UploadPage() {
       }
       // Clerk users (including employees) use Clerk token to fetch their role
       if (isSignedIn) {
-        const token = await getToken();
-        if (!token) return;
-        const nextRole = await fetchUserRole(apiBase, token);
-        if (active) setRole(nextRole);
+        if (active) setRole("customer");
         return;
       }
       // Only use partner token if not signed in via Clerk

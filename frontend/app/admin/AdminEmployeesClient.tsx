@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { UserRole, isAdminRole } from "../lib/roles";
+import { EmployeeRole, SessionRole, isAdminRole } from "../lib/roles";
 import { useEmployeeSession } from "../lib/use-employee-session";
 import { AlertCircle, CheckCircle2, Plus, RefreshCw, Search, ShieldUser, Users, X } from "lucide-react";
 import CountryCodeSelect from "../components/CountryCodeSelect";
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-const EMPLOYEE_ROLE_OPTIONS: UserRole[] = ["sales", "arm_rm", "manager", "area_manager", "zonal_head", "admin"];
+const EMPLOYEE_ROLE_OPTIONS: EmployeeRole[] = ["sales", "arm_rm", "manager", "area_manager", "zonal_head", "admin"];
 const PHONE_COUNTRY_OPTIONS = [
   { code: "+91", label: "India (+91)", shortLabel: "+91" },
   { code: "+1", label: "United States (+1)", shortLabel: "+1" },
@@ -19,14 +19,14 @@ type EmployeeOut = {
   full_name: string | null;
   primary_email: string | null;
   phone: string;
-  role: UserRole;
+  role: EmployeeRole;
   is_active: boolean;
   created_at: string;
   updated_at: string;
 };
 
 type AdminEmployeesClientProps = {
-  initialRole: UserRole | null;
+  initialRole: SessionRole | null;
 };
 
 function formatDate(value: string): string {
@@ -39,13 +39,13 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
   const { getToken, isSignedIn } = useAuth();
   const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
 
-  const [currentRole, setCurrentRole] = useState<UserRole | null>(initialRole ?? null);
+  const [currentRole, setCurrentRole] = useState<SessionRole | null>(initialRole ?? null);
   const [employees, setEmployees] = useState<EmployeeOut[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [roleEdits, setRoleEdits] = useState<Record<string, UserRole>>({});
+  const [roleEdits, setRoleEdits] = useState<Record<string, EmployeeRole>>({});
   const [updatingEmployeeId, setUpdatingEmployeeId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -54,7 +54,7 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
     primaryEmail: "",
     phoneNational: "",
     phoneCountryCode: "+91" as (typeof PHONE_COUNTRY_OPTIONS)[number]["code"],
-    role: "sales" as UserRole,
+    role: "sales" as EmployeeRole,
   });
 
   const getAuthToken = useCallback(async (): Promise<string | null> => {
@@ -67,22 +67,15 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
     async function fetchRole() {
       if (!employeeReady) return;
       if (employeeToken && employeeInfo?.role) {
-        if (active) setCurrentRole(employeeInfo.role as UserRole);
+        if (active) setCurrentRole(employeeInfo.role as SessionRole);
         return;
       }
       if (!isSignedIn) {
         setCurrentRole(null);
         return;
       }
-      const token = await getAuthToken();
-      if (!token) return;
-      const res = await fetch(`${apiBase}/v1/users/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
-      if (!res.ok) return;
-      const data = (await res.json()) as { role?: UserRole };
-      if (active) setCurrentRole(data.role ?? null);
+      // Clerk-authenticated users are customer-only for UI role handling.
+      if (active) setCurrentRole("customer");
     }
     void fetchRole();
     return () => {
@@ -108,7 +101,7 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
       const data = (await res.json()) as EmployeeOut[];
       setEmployees(data);
       setRoleEdits(
-        data.reduce<Record<string, UserRole>>((acc, employee) => {
+        data.reduce<Record<string, EmployeeRole>>((acc, employee) => {
           acc[employee.employee_id] = employee.role;
           return acc;
         }, {})
@@ -337,7 +330,7 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
                       <select
                         value={roleEdits[employee.employee_id] ?? employee.role}
                         onChange={(event) =>
-                          setRoleEdits((prev) => ({ ...prev, [employee.employee_id]: event.target.value as UserRole }))
+                          setRoleEdits((prev) => ({ ...prev, [employee.employee_id]: event.target.value as EmployeeRole }))
                         }
                         className="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
                       >
@@ -431,7 +424,7 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
               />
               <select
                 value={newEmployee.role}
-                onChange={(e) => setNewEmployee((prev) => ({ ...prev, role: e.target.value as UserRole }))}
+                onChange={(e) => setNewEmployee((prev) => ({ ...prev, role: e.target.value as EmployeeRole }))}
                 className="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
               >
                 {EMPLOYEE_ROLE_OPTIONS.map((role) => (

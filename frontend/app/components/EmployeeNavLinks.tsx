@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { clearEmployeeToken } from "../lib/employee-auth";
 import { useEmployeeSession } from "../lib/use-employee-session";
-import { isAdminRole, UserRole } from "../lib/roles";
+import { isAdminRole, SessionRole } from "../lib/roles";
 import { FileText, LogOut, ShieldUser, Users, UsersRound } from "lucide-react";
 
 function EmployeeLink({ href, label, exact = false }: { href: string; label: string; exact?: boolean }) {
@@ -26,15 +27,16 @@ function EmployeeLink({ href, label, exact = false }: { href: string; label: str
 }
 
 export function EmployeeDesktopNav() {
+  const { isSignedIn } = useUser();
   const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
 
-  if (!employeeReady || !employeeToken) return null;
+  if (!employeeReady || !employeeToken || isSignedIn) return null;
 
   return (
     <>
       <EmployeeLink href="/policies" label="All Policies" />
       <EmployeeLink href="/leads" label="Manage Partner Leads" />
-      {isAdminRole((employeeInfo?.role as UserRole | undefined) ?? null) && (
+      {isAdminRole((employeeInfo?.role as SessionRole | undefined) ?? null) && (
         <>
           <EmployeeLink href="/admin" label="Manage Users" exact />
           <EmployeeLink href="/admin/employees" label="Manage Employees" />
@@ -45,9 +47,10 @@ export function EmployeeDesktopNav() {
 }
 
 export function EmployeeMobileNav() {
+  const { isSignedIn } = useUser();
   const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
 
-  if (!employeeReady || !employeeToken) return null;
+  if (!employeeReady || !employeeToken || isSignedIn) return null;
 
   return (
     <nav className="flex items-center gap-1 xl:hidden">
@@ -57,7 +60,7 @@ export function EmployeeMobileNav() {
       <Link href="/leads" className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-slate-700 hover:bg-[#F0F5FF] hover:text-heading">
         <Users className="h-5 w-5" />
       </Link>
-      {isAdminRole((employeeInfo?.role as UserRole | undefined) ?? null) && (
+      {isAdminRole((employeeInfo?.role as SessionRole | undefined) ?? null) && (
         <>
           <Link href="/admin" className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-slate-700 hover:bg-[#F0F5FF] hover:text-heading">
             <ShieldUser className="h-5 w-5" />
@@ -72,6 +75,7 @@ export function EmployeeMobileNav() {
 }
 
 export function EmployeeUserButton() {
+  const { isSignedIn } = useUser();
   const router = useRouter();
   const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
   const [isOpen, setIsOpen] = useState(false);
@@ -87,7 +91,7 @@ export function EmployeeUserButton() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  if (!employeeReady || !employeeToken) return null;
+  if (!employeeReady || !employeeToken || isSignedIn) return null;
 
   const source = employeeInfo?.full_name || employeeInfo?.primary_email || employeeInfo?.role || "Employee";
   const initials = source

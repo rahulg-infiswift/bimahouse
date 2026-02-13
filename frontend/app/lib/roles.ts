@@ -1,14 +1,9 @@
-export type UserRole =
-  | "customer"
-  | "partner"
-  | "sales"
-  | "arm_rm"
-  | "manager"
-  | "area_manager"
-  | "zonal_head"
-  | "admin";
+export type UserRole = "customer";
+export type PartnerRole = "partner";
+export type EmployeeRole = "sales" | "arm_rm" | "manager" | "area_manager" | "zonal_head" | "admin";
+export type SessionRole = UserRole | PartnerRole | EmployeeRole;
 
-export const ROLE_OPTIONS: UserRole[] = [
+export const ROLE_OPTIONS: SessionRole[] = [
   "customer",
   "partner",
   "sales",
@@ -19,7 +14,7 @@ export const ROLE_OPTIONS: UserRole[] = [
   "admin",
 ];
 
-export const EMPLOYEE_ROLES = new Set<UserRole>([
+export const EMPLOYEE_ROLES = new Set<EmployeeRole>([
   "sales",
   "arm_rm",
   "manager",
@@ -28,26 +23,14 @@ export const EMPLOYEE_ROLES = new Set<UserRole>([
   "admin",
 ]);
 
-export function isEmployeeRole(role: UserRole | null): boolean {
-  return role ? EMPLOYEE_ROLES.has(role) : false;
+export function isEmployeeRole(role: SessionRole | null): boolean {
+  return role ? (EMPLOYEE_ROLES as Set<string>).has(role) : false;
 }
 
-export function canAccessPolicies(role: UserRole | null): boolean {
+export function canAccessPolicies(role: SessionRole | null): boolean {
   return role === "partner" || isEmployeeRole(role);
 }
 
-export function isAdminRole(role: UserRole | null): boolean {
+export function isAdminRole(role: SessionRole | null): boolean {
   return role === "admin";
-}
-
-export async function fetchUserRole(
-  apiBase: string,
-  token: string
-): Promise<UserRole | null> {
-  const res = await fetch(`${apiBase}/v1/users/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) return null;
-  const data = (await res.json()) as { role?: UserRole };
-  return data.role ?? null;
 }

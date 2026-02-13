@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { AlertCircle, Plus, RefreshCw, Search, Users } from "lucide-react";
-import { fetchUserRole, isEmployeeRole, UserRole } from "../lib/roles";
+import { SessionRole, isEmployeeRole } from "../lib/roles";
 import { useEmployeeSession } from "../lib/use-employee-session";
 
 type LeadSummary = {
@@ -33,8 +33,8 @@ type LeadListItem = {
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 const statusConfig: Record<string, { bg: string; text: string; icon: string }> = {
-  submitted: { bg: "bg-blue-50", text: "text-blue-700", icon: "📤" },
-  in_review: { bg: "bg-sky-50", text: "text-sky-700", icon: "👁" },
+  submitted: { bg: "bg-blue-50", text: "text-[#0B5CAD]", icon: "📤" },
+  in_review: { bg: "bg-blue-100", text: "text-[#0B5CAD]", icon: "👁" },
   approved: { bg: "bg-blue-50", text: "text-[#0B5CAD]", icon: "✓" },
   rejected: { bg: "bg-slate-100", text: "text-slate-700", icon: "✗" },
 };
@@ -43,7 +43,7 @@ export default function AdminLeadsPage() {
   const { getToken, isSignedIn } = useAuth();
   const { employeeToken, employeeInfo, employeeReady } = useEmployeeSession();
 
-  const [role, setRole] = useState<UserRole | null>(null);
+  const [role, setRole] = useState<SessionRole | null>(null);
   const [summary, setSummary] = useState<LeadSummary | null>(null);
   const [items, setItems] = useState<LeadListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,17 +65,14 @@ export default function AdminLeadsPage() {
     async function loadRole() {
       if (!employeeReady) return;
       if (employeeToken && employeeInfo?.role) {
-        if (active) setRole(employeeInfo.role as UserRole);
+        if (active) setRole(employeeInfo.role as SessionRole);
         return;
       }
       if (!isSignedIn) {
         setRole(null);
         return;
       }
-      const token = await getToken();
-      if (!token) return;
-      const nextRole = await fetchUserRole(API, token);
-      if (active) setRole(nextRole);
+      if (active) setRole("customer");
     }
     void loadRole();
     return () => {
@@ -284,9 +281,9 @@ export default function AdminLeadsPage() {
 
         {/* Error */}
         {err && (
-          <div className="mb-6 flex items-start gap-3 rounded-sm border border-red-100 bg-red-50 p-4">
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
-            <p className="text-sm text-red-700 whitespace-pre-wrap">{err}</p>
+          <div className="mb-6 flex items-start gap-3 rounded-sm border border-blue-100 bg-blue-50 p-4">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#0B5CAD]" />
+            <p className="text-sm text-[#0B5CAD] whitespace-pre-wrap">{err}</p>
           </div>
         )}
 
@@ -314,7 +311,7 @@ export default function AdminLeadsPage() {
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 px-6">
-              <svg className="h-8 w-8 text-blue-600 animate-spin mb-4" fill="none" viewBox="0 0 24 24">
+              <svg className="h-8 w-8 text-[#0B5CAD] animate-spin mb-4" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -342,11 +339,11 @@ export default function AdminLeadsPage() {
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-mono font-medium text-blue-700 ring-1 ring-blue-100">
+                          <span className="rounded-sm bg-blue-100 px-1.5 py-0.5 text-xs font-mono font-medium text-[#0B5CAD] ring-1 ring-blue-200">
                             {r.lead_display_id}
                           </span>
                           {r.partner_display_id && (
-                            <span className="rounded bg-cyan-50 px-1.5 py-0.5 text-xs font-mono font-medium text-cyan-700 ring-1 ring-cyan-100">
+                            <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-mono font-medium text-[#0B5CAD] ring-1 ring-blue-200">
                               {r.partner_display_id}
                             </span>
                           )}
@@ -361,14 +358,14 @@ export default function AdminLeadsPage() {
                             {r.status.replace("_", " ")}
                           </span>
                           {r.created_via && (
-                            <span className="rounded-full bg-blue-50 text-blue-700 px-2.5 py-1 text-xs font-medium ring-1 ring-blue-100">
+                            <span className="rounded-full bg-blue-50 text-[#0B5CAD] px-2.5 py-1 text-xs font-medium ring-1 ring-blue-100">
                               {r.created_via === "self_serve" ? "self-serve" : "sales-assisted"}
                             </span>
                           )}
                           <span
                             className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                               r.email_verified
-                                ? "bg-blue-100 text-blue-800"
+                                ? "bg-blue-100 text-[#0B5CAD]"
                                 : "bg-slate-100 text-slate-700"
                             }`}
                           >
@@ -381,7 +378,7 @@ export default function AdminLeadsPage() {
                         {/* Only show verification controls for unverified leads */}
                         {!r.email_verified && (
                           <div className="flex items-center gap-2 rounded-sm border border-blue-200 bg-blue-50 px-3 py-2">
-                            <span className="text-xs text-blue-700 font-medium">Verify email:</span>
+                            <span className="text-xs text-[#0B5CAD] font-medium">Verify email:</span>
                             <button
                               onClick={() => sendOtp(r.application_id)}
                               disabled={busyLead === r.application_id}
