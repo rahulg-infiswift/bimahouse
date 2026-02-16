@@ -90,6 +90,11 @@ def _find_approved_posp_application_by_phone(db: Session, phone: str) -> Optiona
     )
 
 
+def _find_posp_application_by_phone(db: Session, phone: str) -> Optional[PospApplication]:
+    normalized_phone = _normalize_phone(phone)
+    return db.query(PospApplication).filter(PospApplication.phone == normalized_phone).first()
+
+
 def _issue_partner_token(partner_application_id: uuid.UUID) -> tuple[str, int]:
     secret = settings.partner_jwt_secret
     if not secret:
@@ -426,17 +431,25 @@ def request_partner_login_otp(
     payload: PartnerLoginRequestIn,
     db: Session = Depends(get_db),
 ):
-    posp_application = _find_approved_posp_application_by_phone(db, str(payload.phone))
+    normalized_phone = _normalize_phone(str(payload.phone))
+    posp_application = _find_posp_application_by_phone(db, normalized_phone)
     logger.info(
         "Partner login OTP request for phone: %s, found application_id: %s, lead_number: %s",
-        payload.phone,
+        normalized_phone,
         str(posp_application.id) if posp_application else "None",
         str(posp_application.lead_number) if posp_application else "None",
     )
     if not posp_application:
         # Do not reveal approval/account existence details.
         return PartnerLoginRequestOut(
-            message="If your partner account is approved, an OTP has been sent to your registered phone number."
+            message="No partner account was found for this mobile number. Please complete your partner application or contact support.",
+            otp_sent=False,
+        )
+
+    if posp_application.status != LeadStatus.APPROVED:
+        return PartnerLoginRequestOut(
+            message="Your partner application is not approved yet. Please contact support for status updates.",
+            otp_sent=False,
         )
 
     if not _otp_bypass_enabled():
@@ -467,7 +480,8 @@ def request_partner_login_otp(
         db.commit()
 
     return PartnerLoginRequestOut(
-        message="If your partner account is approved, an OTP has been sent to your registered phone number."
+        message="OTP has been sent to your registered phone number.",
+        otp_sent=True,
     )
 
 

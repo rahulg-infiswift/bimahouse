@@ -149,6 +149,7 @@ class PartnerLoginRequestIn(BaseModel):
 
 class PartnerLoginRequestOut(BaseModel):
     message: str
+    otp_sent: bool = False
 
 
 class PartnerLoginVerifyIn(BaseModel):

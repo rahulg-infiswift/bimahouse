@@ -65,7 +65,8 @@ export default function PartnerLoginPage() {
       if (!res.ok) {
         throw new Error(typeof body?.detail === "string" ? body.detail : "Unable to request OTP.");
       }
-      setOtpRequested(true);
+      const otpSent = body?.otp_sent === true;
+      setOtpRequested(otpSent);
       setNotice(
         typeof body?.message === "string"
           ? body.message
