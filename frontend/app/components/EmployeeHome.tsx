@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { SessionRole, isAdminRole } from "../lib/roles";
 import { useEmployeeSession } from "../lib/use-employee-session";
+import { fetchWithEmployeeRefresh } from "../lib/auth-refresh";
 
 interface EmployeeHomeProps {
   role: SessionRole | null;
@@ -74,7 +75,7 @@ export default function EmployeeHome({ role }: EmployeeHomeProps) {
       try {
         const token = employeeToken ?? (await getToken());
         if (!token) return;
-        const res = await fetch(`${API}/v1/posp-applications/summary`, {
+        const res = await fetchWithEmployeeRefresh(API, `${API}/v1/posp-applications/summary`, token, {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         });

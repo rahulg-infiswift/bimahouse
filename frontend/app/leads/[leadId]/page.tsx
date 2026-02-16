@@ -7,6 +7,7 @@ import { useAuth } from "@clerk/nextjs";
 import { FileUp } from "lucide-react";
 import { SessionRole, isEmployeeRole } from "../../lib/roles";
 import { useEmployeeSession } from "../../lib/use-employee-session";
+import { fetchWithEmployeeRefresh } from "../../lib/auth-refresh";
 import PospApplicationForm, {
   emptyPospApplicationFields,
   PospApplicationFields,
@@ -86,7 +87,7 @@ export default function AdminLeadDetailPage() {
 
   async function authHeaders() {
     const token = employeeToken ?? (await getToken());
-    return { Authorization: `Bearer ${token}` };
+    return { Authorization: `Bearer ${token}`, token };
   }
 
   useEffect(() => {
@@ -117,8 +118,9 @@ export default function AdminLeadDetailPage() {
     setErr(null);
     setOk(null);
     try {
-      const resp = await fetch(`${API}/v1/posp-applications/${leadId}`, {
-        headers: await authHeaders(),
+      const headers = await authHeaders();
+      const resp = await fetchWithEmployeeRefresh(API, `${API}/v1/posp-applications/${leadId}`, headers.token, {
+        headers: { Authorization: headers.Authorization },
       });
       if (!resp.ok) throw new Error(`Load failed: ${resp.status} ${await resp.text()}`);
       const d: LeadDetail = await resp.json();
@@ -169,9 +171,14 @@ export default function AdminLeadDetailPage() {
     setErr(null);
     setOk(null);
     try {
-      const resp = await fetch(`${API}/v1/posp-applications/${leadId}`, {
+      const headers = await authHeaders();
+      const requestHeaders = {
+        Authorization: headers.Authorization,
+        "Content-Type": "application/json",
+      };
+      const resp = await fetchWithEmployeeRefresh(API, `${API}/v1/posp-applications/${leadId}`, headers.token, {
         method: "PATCH",
-        headers: { ...(await authHeaders()), "Content-Type": "application/json" },
+        headers: requestHeaders,
         body: JSON.stringify({
           ...profile,
           status,
@@ -198,11 +205,14 @@ export default function AdminLeadDetailPage() {
 
       // Backend endpoint expected:
       // POST /v1/posp-applications/{application_id}/documents?doc_type=...
-      const resp = await fetch(
+      const headers = await authHeaders();
+      const resp = await fetchWithEmployeeRefresh(
+        API,
         `${API}/v1/posp-applications/${leadId}/documents?doc_type=${encodeURIComponent(docType)}`,
+        headers.token,
         {
           method: "POST",
-          headers: await authHeaders(),
+          headers: { Authorization: headers.Authorization },
           body: form,
         }
       );

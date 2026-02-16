@@ -5,6 +5,7 @@ import { useAuth } from "@clerk/nextjs";
 import { SessionRole, UserRole, isAdminRole } from "../lib/roles";
 import { useEmployeeSession } from "../lib/use-employee-session";
 import { AlertCircle, CheckCircle2, RefreshCw, Search, ShieldUser, Users } from "lucide-react";
+import { fetchWithEmployeeRefresh } from "../lib/auth-refresh";
 
 type UserOut = {
   user_id: string;
@@ -73,7 +74,7 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
     try {
       const token = await getAuthToken();
       if (!token) throw new Error("Missing auth token.");
-      const res = await fetch(`${apiBase}/v1/admin/users?limit=200`, {
+      const res = await fetchWithEmployeeRefresh(apiBase, `${apiBase}/v1/admin/users?limit=200`, token, {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
@@ -122,7 +123,7 @@ export default function AdminUsersClient({ initialRole }: AdminUsersClientProps)
     try {
       const token = await getAuthToken();
       if (!token) throw new Error("Missing auth token.");
-      const res = await fetch(`${apiBase}/v1/admin/users/${userId}/role`, {
+      const res = await fetchWithEmployeeRefresh(apiBase, `${apiBase}/v1/admin/users/${userId}/role`, token, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,

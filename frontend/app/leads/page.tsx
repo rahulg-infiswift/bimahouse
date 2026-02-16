@@ -7,6 +7,7 @@ import Link from "next/link";
 import { AlertCircle, Plus, RefreshCw, Search, Users } from "lucide-react";
 import { SessionRole, isEmployeeRole } from "../lib/roles";
 import { useEmployeeSession } from "../lib/use-employee-session";
+import { fetchWithEmployeeRefresh } from "../lib/auth-refresh";
 
 type LeadSummary = {
   submitted: number;
@@ -57,7 +58,7 @@ export default function AdminLeadsPage() {
 
   async function authHeaders() {
     const token = employeeToken ?? (await getToken());
-    return { Authorization: `Bearer ${token}` };
+    return { Authorization: `Bearer ${token}`, token };
   }
 
   useEffect(() => {
@@ -94,10 +95,13 @@ export default function AdminLeadsPage() {
     setErr(null);
     try {
       const headers = await authHeaders();
-
       const [s, l] = await Promise.all([
-        fetch(`${API}/v1/posp-applications/summary`, { headers }),
-        fetch(`${API}/v1/posp-applications`, { headers }),
+        fetchWithEmployeeRefresh(API, `${API}/v1/posp-applications/summary`, headers.token, {
+          headers: { Authorization: headers.Authorization },
+        }),
+        fetchWithEmployeeRefresh(API, `${API}/v1/posp-applications`, headers.token, {
+          headers: { Authorization: headers.Authorization },
+        }),
       ]);
 
       if (!s.ok) throw new Error(`Summary failed: ${s.status} ${await s.text()}`);
@@ -156,9 +160,9 @@ export default function AdminLeadsPage() {
     setBusyLead(leadId);
     try {
       const headers = await authHeaders();
-      const resp = await fetch(`${API}/v1/posp-applications/${leadId}/send-otp`, {
+      const resp = await fetchWithEmployeeRefresh(API, `${API}/v1/posp-applications/${leadId}/send-otp`, headers.token, {
         method: "POST",
-        headers,
+        headers: { Authorization: headers.Authorization },
       });
       if (!resp.ok) throw new Error(`Send OTP failed: ${resp.status} ${await resp.text()}`);
       await load();
@@ -177,14 +181,15 @@ export default function AdminLeadsPage() {
       const otp = (otpByLead[leadId] || "").trim();
       if (!otp) throw new Error("Enter OTP first");
 
-      const headers = {
-        ...(await authHeaders()),
+      const headers = await authHeaders();
+      const requestHeaders = {
+        Authorization: headers.Authorization,
         "Content-Type": "application/json",
       };
 
-      const resp = await fetch(`${API}/v1/posp-applications/${leadId}/verify-otp`, {
+      const resp = await fetchWithEmployeeRefresh(API, `${API}/v1/posp-applications/${leadId}/verify-otp`, headers.token, {
         method: "POST",
-        headers,
+        headers: requestHeaders,
         body: JSON.stringify({ otp }),
       });
 

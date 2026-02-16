@@ -19,6 +19,7 @@ import {
 import { SessionRole, canAccessPolicies, isEmployeeRole } from "../lib/roles";
 import { usePartnerSession } from "../lib/use-partner-session";
 import { useEmployeeSession } from "../lib/use-employee-session";
+import { fetchWithEmployeeRefresh, fetchWithPartnerRefresh } from "../lib/auth-refresh";
 
 type PolicyListItem = {
   policy_id: string;
@@ -58,7 +59,14 @@ export default function PoliciesPage() {
   const isEmployeeSession = Boolean(employeeToken) || isEmployeeRole(role);
 
   async function fetchWithAuth(path: string, token: string, init?: RequestInit) {
-    return fetch(`${apiBase}${path}`, {
+    const url = `${apiBase}${path}`;
+    if (employeeToken) {
+      return fetchWithEmployeeRefresh(apiBase, url, token, init);
+    }
+    if (partnerToken) {
+      return fetchWithPartnerRefresh(apiBase, url, token, init);
+    }
+    return fetch(url, {
       ...init,
       headers: {
         ...(init?.headers ?? {}),

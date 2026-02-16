@@ -6,6 +6,7 @@ import { EmployeeRole, SessionRole, isAdminRole } from "../lib/roles";
 import { useEmployeeSession } from "../lib/use-employee-session";
 import { AlertCircle, CheckCircle2, Plus, RefreshCw, Search, ShieldUser, Users, X } from "lucide-react";
 import CountryCodeSelect from "../components/CountryCodeSelect";
+import { fetchWithEmployeeRefresh } from "../lib/auth-refresh";
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 const EMPLOYEE_ROLE_OPTIONS: EmployeeRole[] = ["sales", "arm_rm", "manager", "area_manager", "zonal_head", "admin"];
@@ -90,7 +91,7 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
     try {
       const token = await getAuthToken();
       if (!token) throw new Error("Missing auth token.");
-      const res = await fetch(`${apiBase}/v1/admin/employees?limit=200`, {
+      const res = await fetchWithEmployeeRefresh(apiBase, `${apiBase}/v1/admin/employees?limit=200`, token, {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
@@ -142,7 +143,7 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
     try {
       const token = await getAuthToken();
       if (!token) throw new Error("Missing auth token.");
-      const res = await fetch(`${apiBase}/v1/admin/employees/${employeeId}/role`, {
+      const res = await fetchWithEmployeeRefresh(apiBase, `${apiBase}/v1/admin/employees/${employeeId}/role`, token, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -184,7 +185,7 @@ export default function AdminEmployeesClient({ initialRole }: AdminEmployeesClie
     try {
       const token = await getAuthToken();
       if (!token) throw new Error("Missing auth token.");
-      const res = await fetch(`${apiBase}/v1/admin/employees`, {
+      const res = await fetchWithEmployeeRefresh(apiBase, `${apiBase}/v1/admin/employees`, token, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
