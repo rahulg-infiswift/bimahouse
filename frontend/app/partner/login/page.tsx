@@ -99,7 +99,8 @@ export default function PartnerLoginPage() {
         throw new Error(typeof body?.detail === "string" ? body.detail : "OTP verification failed.");
       }
       const token = typeof body?.access_token === "string" ? body.access_token : null;
-      if (!token) throw new Error("Login token missing in response.");
+      const refreshToken = typeof body?.refresh_token === "string" ? body.refresh_token : null;
+      if (!token || !refreshToken) throw new Error("Login token missing in response.");
       
       // Store partner info along with token
       const partnerInfo: PartnerInfo = {
@@ -108,7 +109,7 @@ export default function PartnerLoginPage() {
         partner_application_id: body.partner_application_id || "",
         partner_display_id: body.partner_display_id,
       };
-      setPartnerToken(token, partnerInfo);
+      setPartnerToken(token, partnerInfo, refreshToken);
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "OTP verification failed.");

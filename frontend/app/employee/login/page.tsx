@@ -93,7 +93,8 @@ export default function EmployeeLoginPage() {
       }
 
       const token = typeof body?.access_token === "string" ? body.access_token : null;
-      if (!token) throw new Error("Login token missing in response.");
+      const refreshToken = typeof body?.refresh_token === "string" ? body.refresh_token : null;
+      if (!token || !refreshToken) throw new Error("Login token missing in response.");
 
       const employeeInfo: EmployeeInfo = {
         user_id: String(body.employee_id || ""),
@@ -101,7 +102,7 @@ export default function EmployeeLoginPage() {
         full_name: typeof body.full_name === "string" ? body.full_name : null,
         primary_email: typeof body.primary_email === "string" ? body.primary_email : null,
       };
-      setEmployeeToken(token, employeeInfo);
+      setEmployeeToken(token, employeeInfo, refreshToken);
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "OTP verification failed.");

@@ -1,6 +1,7 @@
 "use client";
 
 const EMPLOYEE_TOKEN_KEY = "bimahouse_employee_token";
+const EMPLOYEE_REFRESH_TOKEN_KEY = "bimahouse_employee_refresh_token";
 const EMPLOYEE_INFO_KEY = "bimahouse_employee_info";
 const EMPLOYEE_SESSION_EVENT = "bimahouse:employee-session-changed";
 
@@ -11,9 +12,38 @@ export interface EmployeeInfo {
   primary_email?: string | null;
 }
 
+type JwtPayload = {
+  exp?: number;
+  [key: string]: unknown;
+};
+
+function decodeJwtPayload(token: string): JwtPayload | null {
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const json = atob(padded);
+    return JSON.parse(json) as JwtPayload;
+  } catch {
+    return null;
+  }
+}
+
+export function isEmployeeTokenExpired(token: string): boolean {
+  const payload = decodeJwtPayload(token);
+  if (!payload || typeof payload.exp !== "number") return true;
+  return Date.now() >= payload.exp * 1000;
+}
+
 export function getEmployeeToken(): string | null {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem(EMPLOYEE_TOKEN_KEY);
+}
+
+export function getEmployeeRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(EMPLOYEE_REFRESH_TOKEN_KEY);
 }
 
 export function getEmployeeInfo(): EmployeeInfo | null {
@@ -27,9 +57,12 @@ export function getEmployeeInfo(): EmployeeInfo | null {
   }
 }
 
-export function setEmployeeToken(token: string, info?: EmployeeInfo): void {
+export function setEmployeeToken(token: string, info?: EmployeeInfo, refreshToken?: string): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(EMPLOYEE_TOKEN_KEY, token);
+  if (refreshToken) {
+    window.localStorage.setItem(EMPLOYEE_REFRESH_TOKEN_KEY, refreshToken);
+  }
   if (info) {
     window.localStorage.setItem(EMPLOYEE_INFO_KEY, JSON.stringify(info));
   }
@@ -39,6 +72,7 @@ export function setEmployeeToken(token: string, info?: EmployeeInfo): void {
 export function clearEmployeeToken(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(EMPLOYEE_TOKEN_KEY);
+  window.localStorage.removeItem(EMPLOYEE_REFRESH_TOKEN_KEY);
   window.localStorage.removeItem(EMPLOYEE_INFO_KEY);
   window.dispatchEvent(new Event(EMPLOYEE_SESSION_EVENT));
 }
