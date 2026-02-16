@@ -8,7 +8,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, text, or_ as sqlalchemy_or, and_ as sqlalchemy_and
+from sqlalchemy import func, text, or_ as sqlalchemy_or
 from jose import jwt
 
 from app.core.config import settings
@@ -65,7 +65,7 @@ def _generate_otp() -> str:
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
-def _normalize_phone_parts(raw_phone: str) -> tuple[str, str, str]:
+def _normalize_phone(raw_phone: str) -> str:
     # `INPhoneNumber` already validates/normalizes to E.164.
     e164 = str(raw_phone or "").strip()
     if not e164.startswith("+"):
@@ -75,20 +75,16 @@ def _normalize_phone_parts(raw_phone: str) -> tuple[str, str, str]:
     if len(digits) < 11:
         raise HTTPException(status_code=400, detail="Phone number is invalid.")
 
-    national = digits[-10:]
-    country_digits = digits[:-10]
-    country_code = f"+{country_digits}"
-    return country_code, national, e164
+    return f"+{digits}"
 
 
 def _find_approved_posp_application_by_phone(db: Session, phone: str) -> Optional[PospApplication]:
-    country_code, national, _e164 = _normalize_phone_parts(phone)
+    normalized_phone = _normalize_phone(phone)
     return (
         db.query(PospApplication)
         .filter(
             PospApplication.status == LeadStatus.APPROVED,
-            PospApplication.phone_country_code == country_code,
-            PospApplication.phone_national_number == national,
+            PospApplication.phone == normalized_phone,
         )
         .first()
     )
@@ -264,19 +260,14 @@ def _create_posp_application_record(
     status: str,
 ) -> PospApplicationCreateOut:
     email_normalized = str(email).strip().lower()
-    phone_country_code, phone_national_number, phone_e164 = _normalize_phone_parts(str(phone))
+    phone_e164 = _normalize_phone(str(phone))
     profile_pan = getattr(payload, "pan_number", None) if payload else None
     pan_value = profile_pan if profile_pan else pan_number
     pan_normalized = pan_value.strip().upper() if pan_value else None
 
-    phone_match_filter = sqlalchemy_and(
-        PospApplication.phone_country_code == phone_country_code,
-        PospApplication.phone_national_number == phone_national_number,
-    )
-
     filters = [
         func.lower(PospApplication.lead_email) == email_normalized,
-        phone_match_filter,
+        PospApplication.phone == phone_e164,
     ]
     if pan_normalized:
         filters.append(PospApplication.pan_number == pan_normalized)
@@ -293,8 +284,6 @@ def _create_posp_application_record(
         full_name=full_name.strip(),
         lead_email=email_normalized,
         phone=phone_e164,
-        phone_country_code=phone_country_code,
-        phone_national_number=phone_national_number,
         created_via=created_via,
         status=status,
         created_at=utcnow(),

@@ -57,10 +57,7 @@ class PospApplication(Base):
     full_name: Mapped[str] = mapped_column(String, nullable=False)
     lead_email: Mapped[str] = mapped_column(String, nullable=False, index=True)
     # Canonical E.164 phone (e.g. +919876543210)
-    phone: Mapped[str] = mapped_column(String, nullable=False)
-    # Split phone parts for scalable, index-friendly lookups.
-    phone_country_code: Mapped[str] = mapped_column(String(5), nullable=False)
-    phone_national_number: Mapped[str] = mapped_column(String(10), nullable=False)
+    phone: Mapped[str] = mapped_column(String, nullable=False, index=True)
     created_via: Mapped[str] = mapped_column(String, nullable=False, default=LeadSource.SALES_ASSISTED, index=True)
 
     status: Mapped[str] = mapped_column(String, nullable=False, default=LeadStatus.SUBMITTED, index=True)
