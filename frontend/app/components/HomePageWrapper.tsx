@@ -1,6 +1,7 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { usePartnerSession } from "../lib/use-partner-session";
 import { useEmployeeSession } from "../lib/use-employee-session";
 
@@ -19,8 +20,28 @@ export default function HomePageWrapper({
   PartnerHome,
   EmployeeHome,
 }: HomePageWrapperProps) {
+  const { getToken } = useAuth();
   const { partnerToken, partnerReady } = usePartnerSession();
   const { employeeToken, employeeReady } = useEmployeeSession();
+  const syncedUser = useRef(false);
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
+  useEffect(() => {
+    if (!clerkUserId || syncedUser.current) return;
+    syncedUser.current = true;
+
+    async function ensureUserRecord() {
+      const token = await getToken();
+      if (!token) return;
+      // Ensure a local users row exists for Clerk users (auto-create on demand).
+      await fetch(`${apiBase}/v1/users/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+    }
+
+    void ensureUserRecord();
+  }, [apiBase, clerkUserId, getToken]);
 
   // Wait until client is mounted to check partner token
   if (!partnerReady || !employeeReady) {
