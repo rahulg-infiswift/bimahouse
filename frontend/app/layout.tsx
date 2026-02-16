@@ -82,7 +82,9 @@ export default async function RootLayout({
                       <NavLink href="/policies" label={policyLabel} icon={<FileText className="h-4 w-4" />} />
                     )}
                     {showLeadsLink && <NavLink href="/leads" label="Manage Partner Leads" icon={<Users className="h-4 w-4" />} />}
-                    {showAdminLink && <NavLink href="/admin" label="Manage Users" icon={<ShieldUser className="h-4 w-4" />} />}
+                    {showAdminLink && (
+                      <NavLink href="/admin" label="Manage Users" icon={<ShieldUser className="h-4 w-4" />} exact />
+                    )}
                     {showSupportLink && <NavLink href="/support" label="Support" icon={<Headset className="h-4 w-4" />} />}
                   </SignedIn>
                   {/* Partner nav links for OTP-logged partners (client component) */}
@@ -105,7 +107,9 @@ export default async function RootLayout({
                       <MobileNavLink href="/policies" icon={<FileText className="h-5 w-5 shrink-0" />} />
                     )}
                     {showLeadsLink && <MobileNavLink href="/leads" icon={<Users className="h-5 w-5 shrink-0" />} />}
-                    {showAdminLink && <MobileNavLink href="/admin" icon={<ShieldUser className="h-5 w-5 shrink-0" />} />}
+                    {showAdminLink && (
+                      <MobileNavLink href="/admin" icon={<ShieldUser className="h-5 w-5 shrink-0" />} exact />
+                    )}
                     {showSupportLink && <MobileNavLink href="/support" icon={<Headset className="h-5 w-5 shrink-0" />} />}
                   </nav>
                 </SignedIn>

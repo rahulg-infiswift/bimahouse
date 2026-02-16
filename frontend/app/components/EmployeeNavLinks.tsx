@@ -22,8 +22,8 @@ export function EmployeeDesktopNav() {
       <NavLink href="/leads" label="Manage Partner Leads" icon={<Users className="h-4 w-4" />} />
       {isAdminRole((employeeInfo?.role as SessionRole | undefined) ?? null) && (
         <>
-          <NavLink href="/admin" label="Manage Users" icon={<ShieldUser className="h-4 w-4" />} />
-          <NavLink href="/admin/employees" label="Manage Employees" icon={<UserRound className="h-4 w-4" />} />
+      <NavLink href="/admin" label="Manage Users" icon={<ShieldUser className="h-4 w-4" />} exact />
+      <NavLink href="/admin/employees" label="Manage Employees" icon={<UserRound className="h-4 w-4" />} />
         </>
       )}
     </>
@@ -43,8 +43,8 @@ export function EmployeeMobileNav() {
       <MobileNavLink href="/leads" icon={<Users className="h-5 w-5" />} />
       {isAdminRole((employeeInfo?.role as SessionRole | undefined) ?? null) && (
         <>
-          <MobileNavLink href="/admin" icon={<ShieldUser className="h-5 w-5" />} />
-          <MobileNavLink href="/admin/employees" icon={<UserRound className="h-5 w-5" />} />
+      <MobileNavLink href="/admin" icon={<ShieldUser className="h-5 w-5" />} exact />
+      <MobileNavLink href="/admin/employees" icon={<UserRound className="h-5 w-5" />} />
         </>
       )}
     </nav>

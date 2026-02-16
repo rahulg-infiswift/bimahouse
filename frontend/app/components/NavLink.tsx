@@ -7,11 +7,14 @@ type NavLinkProps = {
   href: string;
   label: string;
   icon?: React.ReactNode;
+  exact?: boolean;
 };
 
-export function NavLink({ href, label, icon }: NavLinkProps) {
+export function NavLink({ href, label, icon, exact = false }: NavLinkProps) {
   const pathname = usePathname();
-  const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+  const isActive = exact
+    ? pathname === href
+    : pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
 
   return (
     <Link
@@ -28,9 +31,19 @@ export function NavLink({ href, label, icon }: NavLinkProps) {
   );
 }
 
-export function MobileNavLink({ href, icon }: { href: string; icon: React.ReactNode }) {
+export function MobileNavLink({
+  href,
+  icon,
+  exact = false,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  exact?: boolean;
+}) {
   const pathname = usePathname();
-  const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+  const isActive = exact
+    ? pathname === href
+    : pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
 
   return (
     <Link
