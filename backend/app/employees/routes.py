@@ -257,13 +257,27 @@ def request_employee_login_otp(
         .filter(
             Employee.phone_country_code == country_code,
             Employee.phone_national_number == national_number,
-            Employee.is_active.is_(True),
         )
         .first()
     )
 
-    if not employee or employee.role not in EmployeeRole.all_roles():
-        return EmployeeOtpRequestOut(message="If your employee account exists, OTP has been sent to your registered number.")
+    if not employee:
+        return EmployeeOtpRequestOut(
+            message="No employee account was found for this mobile number. Please contact your administrator.",
+            otp_sent=False,
+        )
+
+    if not employee.is_active:
+        return EmployeeOtpRequestOut(
+            message="Your employee account is inactive. Please contact your administrator.",
+            otp_sent=False,
+        )
+
+    if employee.role not in EmployeeRole.all_roles():
+        return EmployeeOtpRequestOut(
+            message="Your employee account role is not configured correctly. Please contact your administrator.",
+            otp_sent=False,
+        )
 
     if not _otp_bypass_enabled():
         if employee.otp_last_sent_at and (utcnow() - employee.otp_last_sent_at).total_seconds() < 45:
@@ -291,7 +305,10 @@ def request_employee_login_otp(
         employee.updated_at = utcnow()
         db.commit()
 
-    return EmployeeOtpRequestOut(message="If your employee account exists, OTP has been sent to your registered number.")
+    return EmployeeOtpRequestOut(
+        message="OTP has been sent to your registered number.",
+        otp_sent=True,
+    )
 
 
 @router.post("/v1/employee-auth/verify-otp", response_model=EmployeeOtpVerifyOut, tags=["Employee Auth"])

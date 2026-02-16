@@ -40,6 +40,7 @@ class EmployeeOtpRequestIn(BaseModel):
 
 class EmployeeOtpRequestOut(BaseModel):
     message: str
+    otp_sent: bool = False
 
 
 class EmployeeOtpVerifyIn(BaseModel):
