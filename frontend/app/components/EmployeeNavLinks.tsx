@@ -1,30 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { clearEmployeeToken } from "../lib/employee-auth";
 import { useEmployeeSession } from "../lib/use-employee-session";
 import { isAdminRole, SessionRole } from "../lib/roles";
-import { FileText, LogOut, ShieldUser, Users, UsersRound } from "lucide-react";
-
-function EmployeeLink({ href, label, exact = false }: { href: string; label: string; exact?: boolean }) {
-  const pathname = usePathname();
-  const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
-  return (
-    <Link
-      href={href}
-      className={`inline-flex items-center rounded-sm px-3 py-2 text-[13px] font-semibold transition-colors ${
-        active
-          ? "bg-[#E8F0FE] text-heading"
-          : "text-slate-700 hover:bg-[#F0F5FF] hover:text-heading"
-      }`}
-    >
-      {label}
-    </Link>
-  );
-}
+import { FileText, Home, LogOut, ShieldUser, Users, UserRound } from "lucide-react";
+import { NavLink, MobileNavLink } from "./NavLink";
 
 export function EmployeeDesktopNav() {
   const { isSignedIn } = useUser();
@@ -34,12 +17,13 @@ export function EmployeeDesktopNav() {
 
   return (
     <>
-      <EmployeeLink href="/policies" label="All Policies" />
-      <EmployeeLink href="/leads" label="Manage Partner Leads" />
+      <NavLink href="/" label="Home" icon={<Home className="h-4 w-4" />} />
+      <NavLink href="/policies" label="All Policies" icon={<FileText className="h-4 w-4" />} />
+      <NavLink href="/leads" label="Manage Partner Leads" icon={<Users className="h-4 w-4" />} />
       {isAdminRole((employeeInfo?.role as SessionRole | undefined) ?? null) && (
         <>
-          <EmployeeLink href="/admin" label="Manage Users" exact />
-          <EmployeeLink href="/admin/employees" label="Manage Employees" />
+          <NavLink href="/admin" label="Manage Users" icon={<ShieldUser className="h-4 w-4" />} />
+          <NavLink href="/admin/employees" label="Manage Employees" icon={<UserRound className="h-4 w-4" />} />
         </>
       )}
     </>
@@ -54,20 +38,13 @@ export function EmployeeMobileNav() {
 
   return (
     <nav className="flex items-center gap-1 xl:hidden">
-      <Link href="/policies" className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-slate-700 hover:bg-[#F0F5FF] hover:text-heading">
-        <FileText className="h-5 w-5" />
-      </Link>
-      <Link href="/leads" className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-slate-700 hover:bg-[#F0F5FF] hover:text-heading">
-        <Users className="h-5 w-5" />
-      </Link>
+      <MobileNavLink href="/" icon={<Home className="h-5 w-5" />} />
+      <MobileNavLink href="/policies" icon={<FileText className="h-5 w-5" />} />
+      <MobileNavLink href="/leads" icon={<Users className="h-5 w-5" />} />
       {isAdminRole((employeeInfo?.role as SessionRole | undefined) ?? null) && (
         <>
-          <Link href="/admin" className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-slate-700 hover:bg-[#F0F5FF] hover:text-heading">
-            <ShieldUser className="h-5 w-5" />
-          </Link>
-          <Link href="/admin/employees" className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-slate-700 hover:bg-[#F0F5FF] hover:text-heading">
-            <UsersRound className="h-5 w-5" />
-          </Link>
+          <MobileNavLink href="/admin" icon={<ShieldUser className="h-5 w-5" />} />
+          <MobileNavLink href="/admin/employees" icon={<UserRound className="h-5 w-5" />} />
         </>
       )}
     </nav>

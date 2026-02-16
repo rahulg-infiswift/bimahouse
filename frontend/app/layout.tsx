@@ -15,7 +15,7 @@ import { EmployeeDesktopNav, EmployeeMobileNav, EmployeeUserButton } from "./com
 import { LoginDropdown } from "./components/LoginDropdown";
 import { HideForPartner } from "./components/AuthWrappers";
 import { NavLink, MobileNavLink } from "./components/NavLink";
-import { FileText, Handshake, Headset, Info, ShieldUser, ShieldCheck, Users } from "lucide-react";
+import { FileText, Handshake, Headset, Home, Info, ShieldUser, ShieldCheck, Users } from "lucide-react";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -69,6 +69,9 @@ export default async function RootLayout({
                 </Link>
                 
                 <nav className="hidden items-center gap-1 xl:flex">
+                  <SignedIn>
+                    <NavLink href="/" label="Home" icon={<Home className="h-4 w-4" />} />
+                  </SignedIn>
                   <SignedOut>
                     <HideForPartner>
                       <NavLink href="/become-partner" label="Become a POSP Partner" icon={<Handshake className="h-4 w-4" />} />
@@ -97,6 +100,7 @@ export default async function RootLayout({
               <div className="flex items-center gap-3">
                 <SignedIn>
                   <nav className="flex items-center gap-1 xl:hidden">
+                    <MobileNavLink href="/" icon={<Home className="h-5 w-5 shrink-0" />} />
                     {showPolicyLinks && (
                       <MobileNavLink href="/policies" icon={<FileText className="h-5 w-5 shrink-0" />} />
                     )}

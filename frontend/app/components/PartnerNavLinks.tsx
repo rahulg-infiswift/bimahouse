@@ -1,58 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { usePathname } from "next/navigation";
 import { usePartnerSession } from "../lib/use-partner-session";
 import { clearPartnerToken } from "../lib/partner-auth";
 import { useRouter } from "next/navigation";
-import { FileText, Headset, LogOut, Upload } from "lucide-react";
-
-function NavLink({
-  href,
-  label,
-  icon,
-}: {
-  href: string;
-  label: string;
-  icon?: React.ReactNode;
-}) {
-  const pathname = usePathname();
-  const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
-
-  return (
-    <Link
-      href={href}
-      className={`flex items-center gap-2 rounded-sm px-3.5 py-2 text-[13px] font-semibold transition-colors whitespace-nowrap ${
-        isActive
-          ? "bg-[#E8F0FE] text-heading"
-          : "text-slate-700 hover:bg-[#F0F5FF] hover:text-heading"
-      }`}
-    >
-      {icon ? <span className="shrink-0">{icon}</span> : null}
-      <span className="min-w-0 truncate">{label}</span>
-    </Link>
-  );
-}
-
-function IconLink({ href, icon }: { href: string; icon: React.ReactNode }) {
-  const pathname = usePathname();
-  const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
-
-  return (
-    <Link
-      href={href}
-      className={`inline-flex shrink-0 items-center justify-center rounded-sm p-2 transition-colors ${
-        isActive
-          ? "bg-[#E8F0FE] text-heading"
-          : "text-slate-700 hover:bg-[#F0F5FF] hover:text-heading"
-      }`}
-    >
-      {icon}
-    </Link>
-  );
-}
+import { FileText, Headset, Home, LogOut, Upload } from "lucide-react";
+import { NavLink, MobileNavLink } from "./NavLink";
 
 // Desktop nav links for partner session (OTP login)
 export function PartnerDesktopNav() {
@@ -64,6 +18,7 @@ export function PartnerDesktopNav() {
 
   return (
     <>
+      <NavLink href="/" label="Home" icon={<Home className="h-4 w-4" />} />
       <NavLink
         href="/policies"
         label="My Policies"
@@ -93,11 +48,12 @@ export function PartnerMobileNav() {
 
   return (
     <nav className="flex items-center gap-1 xl:hidden">
-      <IconLink
+      <MobileNavLink href="/" icon={<Home className="h-5 w-5 shrink-0" />} />
+      <MobileNavLink
         href="/policies"
         icon={<FileText className="h-5 w-5 shrink-0" />}
       />
-      <IconLink
+      <MobileNavLink
         href="/upload"
         icon={<Upload className="h-5 w-5 shrink-0" />}
       />

@@ -6,7 +6,6 @@ import { useAuth } from "@clerk/nextjs";
 import { useUser } from "@clerk/nextjs";
 import {
   ArrowRight,
-  Briefcase,
   ClipboardList,
   FileText,
   ShieldCheck,
@@ -113,7 +112,7 @@ export default function EmployeeHome({ role }: EmployeeHomeProps) {
           >
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
-                <Briefcase className="h-5 w-5" />
+                <Users className="h-5 w-5" />
               </div>
               <div className="min-w-0">
                 <h3 className="text-base font-semibold text-heading">
@@ -136,7 +135,7 @@ export default function EmployeeHome({ role }: EmployeeHomeProps) {
               >
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-blue-50 text-[#0B5CAD]">
-                    <Users className="h-5 w-5" />
+                    <ShieldUser className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-base font-semibold text-heading">Manage Users</h3>
@@ -210,7 +209,7 @@ export default function EmployeeHome({ role }: EmployeeHomeProps) {
           <div className="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total Leads</span>
-              <Briefcase className="h-4 w-4 text-[#0B5CAD]" />
+              <Users className="h-4 w-4 text-[#0B5CAD]" />
             </div>
             <p className="mt-3 text-2xl font-semibold text-[#0B5CAD]">{counts.totalLeads}</p>
           </div>
@@ -224,7 +223,7 @@ export default function EmployeeHome({ role }: EmployeeHomeProps) {
           <div className="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Approved</span>
-              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              <ShieldCheck className="h-4 w-4 text-[#0B5CAD]" />
             </div>
             <p className="mt-3 text-2xl font-semibold text-[#0B5CAD]">{counts.approved}</p>
           </div>
