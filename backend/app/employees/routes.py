@@ -31,6 +31,10 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _otp_bypass_enabled() -> bool:
+    return bool(getattr(settings, "otp_bypass", False))
+
+
 def _normalize_phone_parts(raw_phone: str) -> tuple[str, str, str]:
     e164 = str(raw_phone or "").strip()
     if not e164.startswith("+"):
@@ -229,23 +233,31 @@ def request_employee_login_otp(
     if not employee or employee.role not in EmployeeRole.all_roles():
         return EmployeeOtpRequestOut(message="If your employee account exists, OTP has been sent to your registered number.")
 
-    if employee.otp_last_sent_at and (utcnow() - employee.otp_last_sent_at).total_seconds() < 45:
-        raise HTTPException(status_code=429, detail="OTP recently sent. Please wait before resending.")
+    if not _otp_bypass_enabled():
+        if employee.otp_last_sent_at and (utcnow() - employee.otp_last_sent_at).total_seconds() < 45:
+            raise HTTPException(status_code=429, detail="OTP recently sent. Please wait before resending.")
 
-    otp = _generate_otp()
-    employee.otp_hash = _hash_otp(otp)
-    employee.otp_expires_at = utcnow() + timedelta(minutes=10)
-    employee.otp_last_sent_at = utcnow()
-    employee.otp_attempts = 0
-    employee.updated_at = utcnow()
-    db.commit()
+        otp = _generate_otp()
+        employee.otp_hash = _hash_otp(otp)
+        employee.otp_expires_at = utcnow() + timedelta(minutes=10)
+        employee.otp_last_sent_at = utcnow()
+        employee.otp_attempts = 0
+        employee.updated_at = utcnow()
+        db.commit()
 
-    sms_text = (
-        f"Bima House Employee OTP: {otp} "
-        "Valid for 10 minutes. "
-        "If you did not request this, ignore this message."
-    )
-    send_sms(to_phone=f"{country_code}{national_number}", body_text=sms_text)
+        sms_text = (
+            f"Bima House Employee OTP: {otp} "
+            "Valid for 10 minutes. "
+            "If you did not request this, ignore this message."
+        )
+        send_sms(to_phone=f"{country_code}{national_number}", body_text=sms_text)
+    else:
+        employee.otp_hash = None
+        employee.otp_expires_at = None
+        employee.otp_last_sent_at = utcnow()
+        employee.otp_attempts = 0
+        employee.updated_at = utcnow()
+        db.commit()
 
     return EmployeeOtpRequestOut(message="If your employee account exists, OTP has been sent to your registered number.")
 
@@ -269,21 +281,22 @@ def verify_employee_login_otp(
     if not employee or employee.role not in EmployeeRole.all_roles():
         raise HTTPException(status_code=401, detail="Invalid login or OTP")
 
-    if not employee.otp_hash or not employee.otp_expires_at:
-        raise HTTPException(status_code=409, detail="OTP not requested yet")
+    if not _otp_bypass_enabled():
+        if not employee.otp_hash or not employee.otp_expires_at:
+            raise HTTPException(status_code=409, detail="OTP not requested yet")
 
-    if utcnow() > employee.otp_expires_at:
-        raise HTTPException(status_code=401, detail="OTP expired")
+        if utcnow() > employee.otp_expires_at:
+            raise HTTPException(status_code=401, detail="OTP expired")
 
-    employee.otp_attempts = (employee.otp_attempts or 0) + 1
-    if employee.otp_attempts > 8:
-        db.commit()
-        raise HTTPException(status_code=429, detail="Too many attempts. Please request a new OTP.")
+        employee.otp_attempts = (employee.otp_attempts or 0) + 1
+        if employee.otp_attempts > 8:
+            db.commit()
+            raise HTTPException(status_code=429, detail="Too many attempts. Please request a new OTP.")
 
-    if _hash_otp(payload.otp.strip()) != employee.otp_hash:
-        employee.updated_at = utcnow()
-        db.commit()
-        raise HTTPException(status_code=401, detail="Invalid OTP")
+        if _hash_otp(payload.otp.strip()) != employee.otp_hash:
+            employee.updated_at = utcnow()
+            db.commit()
+            raise HTTPException(status_code=401, detail="Invalid OTP")
 
     employee.otp_hash = None
     employee.otp_expires_at = None

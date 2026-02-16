@@ -31,6 +31,7 @@ class Settings(BaseSettings):
 
     # Email OTP + Email sending
     otp_secret: Optional[str] = None  # required if using OTP routes
+    otp_bypass: bool = False  # set OTP_BYPASS=true to skip OTP validation in dev
 
     # "console" prints email content in logs; "smtp" sends real email
     email_mode: str = "console"

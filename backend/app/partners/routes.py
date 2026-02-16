@@ -38,6 +38,10 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
+def _otp_bypass_enabled() -> bool:
+    return bool(getattr(settings, "otp_bypass", False))
+
+
 def _fmt(dt):
     return dt.isoformat() if dt else None
 
@@ -415,24 +419,32 @@ def request_partner_login_otp(
             message="If your partner account is approved, an OTP has been sent to your registered phone number."
         )
 
-    # Rate limit resend
-    if posp_application.otp_last_sent_at and (utcnow() - posp_application.otp_last_sent_at).total_seconds() < 45:
-        raise HTTPException(status_code=429, detail="OTP recently sent. Please wait before resending.")
+    if not _otp_bypass_enabled():
+        # Rate limit resend
+        if posp_application.otp_last_sent_at and (utcnow() - posp_application.otp_last_sent_at).total_seconds() < 45:
+            raise HTTPException(status_code=429, detail="OTP recently sent. Please wait before resending.")
 
-    otp = _generate_otp()
-    posp_application.otp_hash = _hash_otp(otp)
-    posp_application.otp_expires_at = utcnow() + timedelta(minutes=10)
-    posp_application.otp_last_sent_at = utcnow()
-    posp_application.otp_attempts = 0
-    posp_application.updated_at = utcnow()
-    db.commit()
+        otp = _generate_otp()
+        posp_application.otp_hash = _hash_otp(otp)
+        posp_application.otp_expires_at = utcnow() + timedelta(minutes=10)
+        posp_application.otp_last_sent_at = utcnow()
+        posp_application.otp_attempts = 0
+        posp_application.updated_at = utcnow()
+        db.commit()
 
-    sms_text = (
-        f"Bima House OTP: {otp} "
-        "Valid for 10 minutes. "
-        "If you did not request this, ignore this message."
-    )
-    send_sms(to_phone=posp_application.phone, body_text=sms_text)
+        sms_text = (
+            f"Bima House OTP: {otp} "
+            "Valid for 10 minutes. "
+            "If you did not request this, ignore this message."
+        )
+        send_sms(to_phone=posp_application.phone, body_text=sms_text)
+    else:
+        posp_application.otp_hash = None
+        posp_application.otp_expires_at = None
+        posp_application.otp_last_sent_at = utcnow()
+        posp_application.otp_attempts = 0
+        posp_application.updated_at = utcnow()
+        db.commit()
 
     return PartnerLoginRequestOut(
         message="If your partner account is approved, an OTP has been sent to your registered phone number."
@@ -448,21 +460,22 @@ def verify_partner_login_otp(
     if not posp_application:
         raise HTTPException(status_code=401, detail="Invalid login or OTP")
 
-    if not posp_application.otp_hash or not posp_application.otp_expires_at:
-        raise HTTPException(status_code=409, detail="OTP not requested yet")
+    if not _otp_bypass_enabled():
+        if not posp_application.otp_hash or not posp_application.otp_expires_at:
+            raise HTTPException(status_code=409, detail="OTP not requested yet")
 
-    if utcnow() > posp_application.otp_expires_at:
-        raise HTTPException(status_code=401, detail="OTP expired")
+        if utcnow() > posp_application.otp_expires_at:
+            raise HTTPException(status_code=401, detail="OTP expired")
 
-    posp_application.otp_attempts = (posp_application.otp_attempts or 0) + 1
-    if posp_application.otp_attempts > 8:
-        db.commit()
-        raise HTTPException(status_code=429, detail="Too many attempts. Please request a new OTP.")
+        posp_application.otp_attempts = (posp_application.otp_attempts or 0) + 1
+        if posp_application.otp_attempts > 8:
+            db.commit()
+            raise HTTPException(status_code=429, detail="Too many attempts. Please request a new OTP.")
 
-    if _hash_otp(payload.otp.strip()) != posp_application.otp_hash:
-        posp_application.updated_at = utcnow()
-        db.commit()
-        raise HTTPException(status_code=401, detail="Invalid OTP")
+        if _hash_otp(payload.otp.strip()) != posp_application.otp_hash:
+            posp_application.updated_at = utcnow()
+            db.commit()
+            raise HTTPException(status_code=401, detail="Invalid OTP")
 
     posp_application.otp_hash = None
     posp_application.otp_expires_at = None
