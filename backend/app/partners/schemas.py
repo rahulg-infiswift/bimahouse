@@ -158,8 +158,27 @@ class PartnerLoginVerifyIn(BaseModel):
 
 class PartnerLoginVerifyOut(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     expires_in: int
+    refresh_expires_in: int
+    role: str = "partner"
+    partner_application_id: str
+    partner_display_id: Optional[str] = None
+    full_name: str
+    email: str
+
+
+class PartnerRefreshIn(BaseModel):
+    refresh_token: str
+
+
+class PartnerRefreshOut(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    refresh_expires_in: int
     role: str = "partner"
     partner_application_id: str
     partner_display_id: Optional[str] = None

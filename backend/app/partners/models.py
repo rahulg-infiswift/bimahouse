@@ -72,6 +72,10 @@ class PospApplication(Base):
     otp_last_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     otp_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
+    refresh_token_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    refresh_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    refresh_last_issued_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
     internal_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 

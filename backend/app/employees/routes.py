@@ -18,6 +18,8 @@ from app.employees.schemas import (
     EmployeeOtpRequestOut,
     EmployeeOtpVerifyIn,
     EmployeeOtpVerifyOut,
+    EmployeeRefreshIn,
+    EmployeeRefreshOut,
     EmployeeOut,
     EmployeePhoneUpdateIn,
     EmployeeRoleUpdateIn,
@@ -62,6 +64,20 @@ def _generate_otp() -> str:
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
+def _hash_refresh_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _employee_refresh_secret() -> str:
+    secret = settings.employee_refresh_jwt_secret or settings.employee_jwt_secret
+    if not secret:
+        raise HTTPException(
+            status_code=500,
+            detail="Employee refresh not configured: EMPLOYEE_REFRESH_JWT_SECRET or EMPLOYEE_JWT_SECRET missing",
+        )
+    return secret
+
+
 def _issue_employee_token(employee: Employee) -> tuple[str, int]:
     secret = settings.employee_jwt_secret
     if not secret:
@@ -77,6 +93,22 @@ def _issue_employee_token(employee: Employee) -> tuple[str, int]:
         "sub": str(employee.id),
         "role": employee.role,
         "typ": "employee",
+        "iat": now,
+        "exp": exp,
+    }
+    token = jwt.encode(payload, secret, algorithm="HS256")
+    return token, exp_minutes * 60
+
+
+def _issue_employee_refresh_token(employee: Employee) -> tuple[str, int]:
+    secret = _employee_refresh_secret()
+    exp_minutes = max(60, int(settings.employee_refresh_exp_minutes))
+    now = int(datetime.now(timezone.utc).timestamp())
+    exp = now + (exp_minutes * 60)
+    payload = {
+        "sub": str(employee.id),
+        "role": employee.role,
+        "typ": "employee_refresh",
         "iat": now,
         "exp": exp,
     }
@@ -303,13 +335,77 @@ def verify_employee_login_otp(
     employee.otp_last_sent_at = None
     employee.otp_attempts = 0
     employee.updated_at = utcnow()
-    db.commit()
-
     access_token, expires_in = _issue_employee_token(employee)
+    refresh_token, refresh_expires_in = _issue_employee_refresh_token(employee)
+    employee.refresh_token_hash = _hash_refresh_token(refresh_token)
+    employee.refresh_expires_at = utcnow() + timedelta(seconds=refresh_expires_in)
+    employee.refresh_last_issued_at = utcnow()
+    db.commit()
 
     return EmployeeOtpVerifyOut(
         access_token=access_token,
+        refresh_token=refresh_token,
         expires_in=expires_in,
+        refresh_expires_in=refresh_expires_in,
+        role=employee.role,
+        employee_id=str(employee.id),
+        full_name=employee.full_name,
+        primary_email=employee.primary_email,
+    )
+
+
+@router.post("/v1/employee-auth/refresh", response_model=EmployeeRefreshOut, tags=["Employee Auth"])
+def refresh_employee_token(
+    payload: EmployeeRefreshIn,
+    db: Session = Depends(get_db),
+):
+    token = payload.refresh_token.strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="Refresh token required")
+
+    try:
+        decoded = jwt.decode(token, _employee_refresh_secret(), algorithms=["HS256"])
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    if decoded.get("typ") != "employee_refresh":
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    employee_id = decoded.get("sub")
+    if not employee_id:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    employee = db.query(Employee).filter(Employee.id == employee_id, Employee.is_active.is_(True)).first()
+    if not employee or employee.role not in EmployeeRole.all_roles():
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    if not employee.refresh_token_hash or not employee.refresh_expires_at:
+        raise HTTPException(status_code=401, detail="Refresh token expired")
+
+    if utcnow() > employee.refresh_expires_at:
+        employee.refresh_token_hash = None
+        employee.refresh_expires_at = None
+        employee.refresh_last_issued_at = None
+        employee.updated_at = utcnow()
+        db.commit()
+        raise HTTPException(status_code=401, detail="Refresh token expired")
+
+    if _hash_refresh_token(token) != employee.refresh_token_hash:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    access_token, expires_in = _issue_employee_token(employee)
+    refresh_token, refresh_expires_in = _issue_employee_refresh_token(employee)
+    employee.refresh_token_hash = _hash_refresh_token(refresh_token)
+    employee.refresh_expires_at = utcnow() + timedelta(seconds=refresh_expires_in)
+    employee.refresh_last_issued_at = utcnow()
+    employee.updated_at = utcnow()
+    db.commit()
+
+    return EmployeeRefreshOut(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=expires_in,
+        refresh_expires_in=refresh_expires_in,
         role=employee.role,
         employee_id=str(employee.id),
         full_name=employee.full_name,

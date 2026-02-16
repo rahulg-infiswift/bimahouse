@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     partner_jwt_exp_minutes: int = 10080  # 7 days (increased from 24h for longer partner sessions)
     employee_jwt_secret: Optional[str] = None
     employee_jwt_exp_minutes: int = 720  # 12 hours
+    partner_refresh_jwt_secret: Optional[str] = None
+    partner_refresh_exp_minutes: int = 43200  # 30 days
+    employee_refresh_jwt_secret: Optional[str] = None
+    employee_refresh_exp_minutes: int = 43200  # 30 days
 
 
     # Email OTP + Email sending

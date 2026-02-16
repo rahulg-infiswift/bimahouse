@@ -21,7 +21,8 @@ from app.partners.schemas import (
     PospApplicationSummaryOut, PospApplicationListItem, PospApplicationDetailOut,
     OtpSendOut, OtpVerifyIn, OtpVerifyOut, AdminPospApplicationUpdateIn,
     PartnerLoginRequestIn, PartnerLoginRequestOut,
-    PartnerLoginVerifyIn, PartnerLoginVerifyOut
+    PartnerLoginVerifyIn, PartnerLoginVerifyOut,
+    PartnerRefreshIn, PartnerRefreshOut
 )
 from app.partners.storage import save_partner_doc_bytes
 from app.partners.email_utils import send_email  # existing helper
@@ -53,6 +54,10 @@ def _hash_otp(otp: str) -> str:
         raise HTTPException(status_code=500, detail="OTP not configured: OTP_SECRET missing")
     raw = f"{secret}:{otp}".encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
+
+
+def _hash_refresh_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def _generate_otp() -> str:
@@ -100,6 +105,32 @@ def _issue_partner_token(partner_application_id: uuid.UUID) -> tuple[str, int]:
         "sub": str(partner_application_id),
         "role": "partner",
         "typ": "partner",
+        "iat": now,
+        "exp": exp,
+    }
+    token = jwt.encode(payload, secret, algorithm="HS256")
+    return token, exp_minutes * 60
+
+
+def _partner_refresh_secret() -> str:
+    secret = settings.partner_refresh_jwt_secret or settings.partner_jwt_secret
+    if not secret:
+        raise HTTPException(
+            status_code=500,
+            detail="Partner refresh not configured: PARTNER_REFRESH_JWT_SECRET or PARTNER_JWT_SECRET missing",
+        )
+    return secret
+
+
+def _issue_partner_refresh_token(partner_application_id: uuid.UUID) -> tuple[str, int]:
+    secret = _partner_refresh_secret()
+    exp_minutes = max(60, int(settings.partner_refresh_exp_minutes))
+    now = int(datetime.now(timezone.utc).timestamp())
+    exp = now + (exp_minutes * 60)
+    payload = {
+        "sub": str(partner_application_id),
+        "role": "partner",
+        "typ": "partner_refresh",
         "iat": now,
         "exp": exp,
     }
@@ -482,13 +513,81 @@ def verify_partner_login_otp(
     posp_application.otp_last_sent_at = None
     posp_application.otp_attempts = 0
     posp_application.updated_at = utcnow()
-    db.commit()
-
     access_token, expires_in = _issue_partner_token(posp_application.id)
+    refresh_token, refresh_expires_in = _issue_partner_refresh_token(posp_application.id)
+    posp_application.refresh_token_hash = _hash_refresh_token(refresh_token)
+    posp_application.refresh_expires_at = utcnow() + timedelta(seconds=refresh_expires_in)
+    posp_application.refresh_last_issued_at = utcnow()
+    db.commit()
 
     return PartnerLoginVerifyOut(
         access_token=access_token,
+        refresh_token=refresh_token,
         expires_in=expires_in,
+        refresh_expires_in=refresh_expires_in,
+        partner_application_id=str(posp_application.id),
+        partner_display_id=posp_application.partner_display_id,
+        full_name=posp_application.full_name,
+        email=posp_application.lead_email,
+    )
+
+
+@router.post("/v1/partner-auth/refresh", response_model=PartnerRefreshOut, tags=["Partner Auth"])
+def refresh_partner_token(
+    payload: PartnerRefreshIn,
+    db: Session = Depends(get_db),
+):
+    token = payload.refresh_token.strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="Refresh token required")
+
+    try:
+        decoded = jwt.decode(token, _partner_refresh_secret(), algorithms=["HS256"])
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    if decoded.get("typ") != "partner_refresh":
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    partner_application_id = decoded.get("sub")
+    if not partner_application_id:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    posp_application = (
+        db.query(PospApplication)
+        .filter(PospApplication.id == partner_application_id, PospApplication.status == LeadStatus.APPROVED)
+        .first()
+    )
+    if not posp_application:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    if not posp_application.refresh_token_hash or not posp_application.refresh_expires_at:
+        raise HTTPException(status_code=401, detail="Refresh token expired")
+
+    if utcnow() > posp_application.refresh_expires_at:
+        posp_application.refresh_token_hash = None
+        posp_application.refresh_expires_at = None
+        posp_application.refresh_last_issued_at = None
+        posp_application.updated_at = utcnow()
+        db.commit()
+        raise HTTPException(status_code=401, detail="Refresh token expired")
+
+    if _hash_refresh_token(token) != posp_application.refresh_token_hash:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    access_token, expires_in = _issue_partner_token(posp_application.id)
+    refresh_token, refresh_expires_in = _issue_partner_refresh_token(posp_application.id)
+    posp_application.refresh_token_hash = _hash_refresh_token(refresh_token)
+    posp_application.refresh_expires_at = utcnow() + timedelta(seconds=refresh_expires_in)
+    posp_application.refresh_last_issued_at = utcnow()
+    posp_application.updated_at = utcnow()
+    db.commit()
+
+    return PartnerRefreshOut(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=expires_in,
+        refresh_expires_in=refresh_expires_in,
         partner_application_id=str(posp_application.id),
         partner_display_id=posp_application.partner_display_id,
         full_name=posp_application.full_name,

@@ -49,8 +49,26 @@ class EmployeeOtpVerifyIn(BaseModel):
 
 class EmployeeOtpVerifyOut(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     expires_in: int
+    refresh_expires_in: int
+    role: str
+    employee_id: str
+    full_name: str | None = None
+    primary_email: str | None = None
+
+
+class EmployeeRefreshIn(BaseModel):
+    refresh_token: str
+
+
+class EmployeeRefreshOut(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    refresh_expires_in: int
     role: str
     employee_id: str
     full_name: str | None = None
