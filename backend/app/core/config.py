@@ -53,5 +53,14 @@ class Settings(BaseSettings):
     twilio_auth_token: Optional[str] = None
     twilio_from_number: Optional[str] = None
 
+    # Advisor integration
+    icici_get_quote_url: Optional[str] = None
+    icici_save_quote_url: Optional[str] = None
+    icici_proposal_url: Optional[str] = None
+
+    tata_agi_get_quote_url: Optional[str] = None
+    tata_agi_save_quote_url: Optional[str] = None
+    tata_agi_proposal_url: Optional[str] = None
+
 
 settings = Settings()
