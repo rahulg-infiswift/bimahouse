@@ -15,6 +15,7 @@ from app.policies.routes import router as policy_router
 from app.users.routes import router as users_router
 from app.employees.routes import router as employees_router
 from app.advisor.conv_routes import router as advisor_conv_router
+from app.quotes.routes import router as quotes_router
 
 
 Path("logs").mkdir(exist_ok=True)
@@ -60,6 +61,7 @@ app.include_router(policy_router)
 app.include_router(users_router)
 app.include_router(employees_router)
 app.include_router(advisor_conv_router)
+app.include_router(quotes_router)
 
 
 @app.get("/v1/health", tags=["Health"])
