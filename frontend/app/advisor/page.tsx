@@ -120,8 +120,8 @@ export default function AdvisorPage() {
             No conversations yet
           </h2>
           <p className="mb-6 max-w-sm text-sm text-slate-500">
-            Start a new chat to get two-wheeler insurance quotes and comparisons
-            with the help of our AI advisor.
+            Start a new chat to get help with any insurance query — motor,
+            health, life, travel, and more.
           </p>
           <button
             onClick={createThread}

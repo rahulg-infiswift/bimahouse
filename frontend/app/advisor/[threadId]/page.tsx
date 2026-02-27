@@ -267,8 +267,8 @@ export default function ChatPage() {
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <p className="text-sm text-slate-500">
-              Start by telling me about the vehicle you&apos;d like to insure.
-              I&apos;ll help you compare quotes from multiple insurers.
+              Ask me about any insurance — motor, health, life, travel, and more.
+              I&apos;m here to help you and your customers.
             </p>
           </div>
         )}
