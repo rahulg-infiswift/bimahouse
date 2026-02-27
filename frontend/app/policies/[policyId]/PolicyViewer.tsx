@@ -2,45 +2,109 @@
 
 import React from "react";
 
-function stringify(v: any) {
-  if (v === null || v === undefined) return "";
-  if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
-  try {
-    return JSON.stringify(v, null, 2);
-  } catch {
-    return String(v);
-  }
+function formatLabel(key: string): string {
+  return key
+    .replace(/_/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function isPlainObject(v: any) {
-  return v && typeof v === "object" && !Array.isArray(v);
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
-function Table({ headers, rows }: { headers: string[]; rows: string[][] }) {
+function isScalar(v: unknown): boolean {
+  return v === null || v === undefined || typeof v === "string" || typeof v === "number" || typeof v === "boolean";
+}
+
+function formatScalar(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "—";
+  if (typeof v === "boolean") return v ? "Yes" : "No";
+  return String(v);
+}
+
+// ---------------------------------------------------------------------------
+// Render a flat object as a two-column key/value table
+// ---------------------------------------------------------------------------
+
+function KVTable({ obj }: { obj: Record<string, unknown> }) {
+  const entries = Object.entries(obj);
+  // Separate scalar fields from nested fields
+  const scalarEntries = entries.filter(([, v]) => isScalar(v));
+  const nestedEntries = entries.filter(([, v]) => !isScalar(v));
+
+  return (
+    <div className="space-y-3">
+      {scalarEntries.length > 0 && (
+        <div className="overflow-auto">
+          <table className="min-w-full text-sm">
+            <tbody>
+              {scalarEntries.map(([key, value]) => (
+                <tr key={key} className="hover:bg-slate-50">
+                  <td className="border-b border-slate-100 px-3 py-2 text-xs font-medium text-slate-500 w-1/3 align-top whitespace-nowrap">
+                    {formatLabel(key)}
+                  </td>
+                  <td className="border-b border-slate-100 px-3 py-2 text-sm text-slate-900 align-top">
+                    {formatScalar(value)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {nestedEntries.map(([key, value]) => (
+        <div key={key} className="rounded-lg border border-slate-100 overflow-hidden">
+          <div className="bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+            {formatLabel(key)}
+          </div>
+          <div className="p-3">
+            <DataRenderer data={value} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Render an array of objects as a proper table
+// ---------------------------------------------------------------------------
+
+function ObjectListTable({ list }: { list: Record<string, unknown>[] }) {
+  const cols = Array.from(new Set(list.flatMap((x) => Object.keys(x))));
+
   return (
     <div className="overflow-auto">
       <table className="min-w-full text-sm">
         <thead className="sticky top-0 bg-slate-50">
           <tr>
-            {headers.map((h) => (
+            {cols.map((h) => (
               <th
                 key={h}
-                className="border-b border-slate-200 px-3 py-2 text-left text-xs font-semibold text-slate-600"
+                className="border-b border-slate-200 px-3 py-2 text-left text-xs font-semibold text-slate-600 whitespace-nowrap"
               >
-                {h}
+                {formatLabel(h)}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, idx) => (
+          {list.map((row, idx) => (
             <tr key={idx} className="hover:bg-slate-50">
-              {r.map((c, j) => (
+              {cols.map((c) => (
                 <td
-                  key={j}
+                  key={c}
                   className="border-b border-slate-100 px-3 py-2 align-top text-slate-700 whitespace-pre-wrap"
                 >
-                  {c}
+                  {isScalar(row[c])
+                    ? formatScalar(row[c])
+                    : isPlainObject(row[c])
+                      ? Object.entries(row[c] as Record<string, unknown>)
+                          .map(([k, v]) => `${formatLabel(k)}: ${formatScalar(v)}`)
+                          .join("\n")
+                      : formatScalar(JSON.stringify(row[c]))}
                 </td>
               ))}
             </tr>
@@ -51,48 +115,72 @@ function Table({ headers, rows }: { headers: string[]; rows: string[][] }) {
   );
 }
 
-function ObjectAsKV({ obj }: { obj: Record<string, any> }) {
-  const headers = ["Field", "Value"];
-  const rows = Object.entries(obj).map(([k, v]) => [k, stringify(v)]);
-  return <Table headers={headers} rows={rows} />;
+// ---------------------------------------------------------------------------
+// Generic recursive renderer
+// ---------------------------------------------------------------------------
+
+function DataRenderer({ data }: { data: unknown }) {
+  if (isScalar(data)) {
+    return <span className="text-sm text-slate-900">{formatScalar(data)}</span>;
+  }
+
+  if (isPlainObject(data)) {
+    return <KVTable obj={data} />;
+  }
+
+  if (Array.isArray(data)) {
+    if (data.length === 0) {
+      return <span className="text-sm text-slate-400">—</span>;
+    }
+    if (data.every(isPlainObject)) {
+      return <ObjectListTable list={data as Record<string, unknown>[]} />;
+    }
+    if (data.every(isScalar)) {
+      return (
+        <span className="text-sm text-slate-900">
+          {data.map((v) => formatScalar(v)).join(", ")}
+        </span>
+      );
+    }
+    // Mixed array — render each item
+    return (
+      <div className="space-y-2">
+        {data.map((item, i) => (
+          <div key={i} className="rounded border border-slate-100 p-2">
+            <DataRenderer data={item} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return <span className="text-sm text-slate-500">{String(data)}</span>;
 }
 
-function ListOfObjectsAsTable({ list }: { list: Record<string, any>[] }) {
-  const cols = Array.from(new Set(list.flatMap((x) => Object.keys(x)))).sort();
-  const rows = list.map((row) => cols.map((c) => stringify(row[c])));
-  return <Table headers={cols} rows={rows} />;
-}
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 
-export default function PolicyViewer({ data }: { data: any }) {
+export default function PolicyViewer({ data }: { data: unknown }) {
   if (!data) {
-    return <div className="text-sm text-slate-500">No extracted JSON yet.</div>;
+    return <div className="text-sm text-slate-500">No extracted data yet.</div>;
   }
 
-  // If it's not an object, just render it
   if (!isPlainObject(data)) {
-    return <pre className="text-xs leading-5 whitespace-pre-wrap text-slate-700">{stringify(data)}</pre>;
+    return <DataRenderer data={data} />;
   }
 
-  const entries = Object.entries(data as Record<string, any>);
+  const entries = Object.entries(data);
 
   return (
     <div className="space-y-4">
       {entries.map(([section, value]) => (
-        <div key={section} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
-            <h3 className="text-sm font-semibold text-slate-900">{section}</h3>
+        <div key={section} className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+            <h3 className="text-sm font-semibold text-slate-900">{formatLabel(section)}</h3>
           </div>
-
           <div className="p-4">
-            {isPlainObject(value) ? (
-              <ObjectAsKV obj={value} />
-            ) : Array.isArray(value) && value.length > 0 && value.every(isPlainObject) ? (
-              <ListOfObjectsAsTable list={value as Record<string, any>[]} />
-            ) : Array.isArray(value) ? (
-              <pre className="text-xs leading-5 whitespace-pre-wrap text-slate-700">{stringify(value)}</pre>
-            ) : (
-              <div className="text-sm text-slate-700">{stringify(value)}</div>
-            )}
+            <DataRenderer data={value} />
           </div>
         </div>
       ))}

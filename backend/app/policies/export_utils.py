@@ -137,30 +137,29 @@ def _write_table_sheet(wb: Workbook, title: str, rows: List[Dict[str, Any]]) -> 
 
 def json_to_xlsx_bytes(data: Any) -> bytes:
     """
-    Creates an XLSX with:
-      - Overview sheet: flattened path/value
-      - For each top-level key:
-          - dict => KeyValue sheet
-          - list[dict] => table sheet
-          - other => KeyValue row in a small sheet
+    Creates an XLSX with flattened keys as column headers and values in a single row.
+    Additional sheets are created for top-level list[dict] sections as proper tables.
     """
     wb = Workbook()
-    # replace default active sheet with Overview
-    ws0 = wb.active
-    ws0.title = "Overview"
-    ws0.append(["path", "value"])
-    for p, v in json_to_path_rows(data):
-        ws0.append([p, v])
-    _autosize_worksheet(ws0)
+    ws = wb.active
+    ws.title = "Policy"
 
+    # Flatten the entire JSON into dot-notation columns
+    flat = _flatten_json(data) if isinstance(data, dict) else {}
+    if flat:
+        keys = list(flat.keys())
+        ws.append(keys)
+        ws.append([flat[k] for k in keys])
+    else:
+        ws.append(["value"])
+        ws.append([_stringify(data)])
+    _autosize_worksheet(ws)
+
+    # Additional sheets for list-of-dict sections (e.g. vehicles, addons)
     if isinstance(data, dict):
         for k, v in data.items():
-            if isinstance(v, dict):
-                _write_kv_sheet(wb, k, v)
-            elif isinstance(v, list) and all(isinstance(x, dict) for x in v):
+            if isinstance(v, list) and v and all(isinstance(x, dict) for x in v):
                 _write_table_sheet(wb, k, v)  # type: ignore[arg-type]
-            else:
-                _write_kv_sheet(wb, k, {"value": v})
 
     out = io.BytesIO()
     wb.save(out)

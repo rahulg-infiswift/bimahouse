@@ -4,8 +4,10 @@ from datetime import datetime, timezone, date
 from typing import Optional
 import logging
 
+import os
+
 from fastapi import APIRouter, Depends, File, Query, UploadFile, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from redis import Redis
 from rq import Queue, Retry
 from sqlalchemy.orm import Session
@@ -267,6 +269,47 @@ def get_policy_for_employee(
         "schema_version": policy.schema_version,
         "extracted_json": policy.extracted_json,
     }
+
+
+@router.get("/v1/partner/policies/{policy_id}/pdf")
+def get_policy_pdf_for_partner(
+    policy_id: uuid.UUID,
+    posp_application: PospApplication = Depends(_get_current_approved_posp_application),
+    db: Session = Depends(get_db),
+):
+    policy = (
+        db.query(Policy)
+        .filter(Policy.id == policy_id, Policy.posp_application_id == posp_application.id)
+        .first()
+    )
+    if not policy:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    if not policy.pdf_storage_key or not os.path.isfile(policy.pdf_storage_key):
+        raise HTTPException(status_code=404, detail="PDF file not found")
+    return FileResponse(
+        policy.pdf_storage_key,
+        media_type="application/pdf",
+        filename=policy.original_filename,
+    )
+
+
+@router.get("/v1/admin/policies/{policy_id}/pdf")
+def get_policy_pdf_for_employee(
+    policy_id: uuid.UUID,
+    employee: Employee = Depends(require_any_employee_role()),
+    db: Session = Depends(get_db),
+):
+    _ = employee
+    policy = db.query(Policy).filter(Policy.id == policy_id).first()
+    if not policy:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    if not policy.pdf_storage_key or not os.path.isfile(policy.pdf_storage_key):
+        raise HTTPException(status_code=404, detail="PDF file not found")
+    return FileResponse(
+        policy.pdf_storage_key,
+        media_type="application/pdf",
+        filename=policy.original_filename,
+    )
 
 
 @router.get("/v1/partner/policies/{policy_id}/download")

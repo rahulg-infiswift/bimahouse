@@ -68,6 +68,7 @@ backend_storage/
 **/*.csv
 **/*.json
 **/*.xlsx
+**/*.png
 !frontend/package.json
 !frontend/package-lock.json
 NOTES.md
