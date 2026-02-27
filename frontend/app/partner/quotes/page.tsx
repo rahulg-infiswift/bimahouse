@@ -2,15 +2,21 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { usePartnerSession } from "../../lib/use-partner-session";
 import { fetchWithPartnerRefresh } from "../../lib/auth-refresh";
 import QuoteWizard from "../../components/QuoteWizard";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export default function PartnerQuotesPage() {
   const { partnerToken, partnerReady } = usePartnerSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const line = searchParams.get("line");
+  const registrationNo = (searchParams.get("reg") || "").toUpperCase();
+  const productLabel = line === "car" ? "Car" : "Bike";
 
   useEffect(() => {
     if (partnerReady && !partnerToken) {
@@ -32,11 +38,12 @@ export default function PartnerQuotesPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-bold text-slate-900">
-        Get Insurance Quotes
+        Get {productLabel} Insurance Quotes
       </h1>
       <QuoteWizard
         apiUrl={`${API_BASE}/v1/partner/quotes`}
         fetchFn={fetchFn}
+        initialRegistrationNo={registrationNo}
       />
     </div>
   );

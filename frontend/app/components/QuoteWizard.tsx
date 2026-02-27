@@ -67,6 +67,8 @@ interface QuoteWizardProps {
   apiUrl: string;
   /** Function to make the fetch call (allows injecting auth) */
   fetchFn?: (url: string, init: RequestInit) => Promise<Response>;
+  /** Optional prefilled registration number */
+  initialRegistrationNo?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -99,7 +101,7 @@ const ADDON_OPTIONS = [
 // Component
 // ---------------------------------------------------------------------------
 
-export default function QuoteWizard({ apiUrl, fetchFn }: QuoteWizardProps) {
+export default function QuoteWizard({ apiUrl, fetchFn, initialRegistrationNo }: QuoteWizardProps) {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +109,7 @@ export default function QuoteWizard({ apiUrl, fetchFn }: QuoteWizardProps) {
 
   // Step 1: Vehicle
   const [vehicle, setVehicle] = useState<VehicleDetails>({
-    registration_no: "",
+    registration_no: initialRegistrationNo || "",
     make_code: 10,
     model_code: 11846,
     rto_code: 12621,

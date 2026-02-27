@@ -1,16 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { usePartnerSession } from "../lib/use-partner-session";
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  Bike,
   Briefcase,
+  Car,
   Clock3,
   FileText,
   Handshake,
   Headset,
+  HeartPulse,
+  Home,
+  Plane,
+  RefreshCw,
+  Store,
+  Building2,
   Upload,
 } from "lucide-react";
 
@@ -21,11 +30,43 @@ type PartnerPolicyItem = {
   has_extracted_json: boolean;
 };
 
+type InsuranceLine = "car" | "bike";
+
+type QuoteForm = {
+  registrationNo: string;
+  mobile: string;
+  email: string;
+  agreeTerms: boolean;
+  agreeWhatsApp: boolean;
+};
+
+const INSURANCE_LINES = [
+  { key: "car", label: "Car", icon: Car, enabled: true },
+  { key: "bike", label: "Bike", icon: Bike, enabled: true },
+  { key: "health", label: "Health", icon: HeartPulse, enabled: false },
+  { key: "travel", label: "Travel", icon: Plane, enabled: false },
+  { key: "home", label: "Home", icon: Home, enabled: false },
+  { key: "sme", label: "SME", icon: Store, enabled: false },
+  { key: "corporate", label: "Corporate", icon: Building2, enabled: false },
+  { key: "renewal", label: "Renewal", icon: RefreshCw, enabled: false },
+] as const;
+
 export default function PartnerHome() {
+  const router = useRouter();
   const { user } = useUser();
   const { partnerInfo, partnerToken } = usePartnerSession();
   const [totalPolicies, setTotalPolicies] = useState<number | null>(null);
   const [recentPolicies, setRecentPolicies] = useState<PartnerPolicyItem[]>([]);
+  const [activeLine, setActiveLine] = useState<InsuranceLine>("car");
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quoteForm, setQuoteForm] = useState<QuoteForm>({
+    registrationNo: "",
+    mobile: "",
+    email: "",
+    agreeTerms: true,
+    agreeWhatsApp: true,
+  });
+
   const apiBase = useMemo(
     () => process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000",
     []
@@ -65,6 +106,42 @@ export default function PartnerHome() {
     };
   }, [apiBase, partnerToken]);
 
+  const registrationLabel = activeLine === "car" ? "Car registration no." : "Bike registration no.";
+
+  const onQuoteSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setQuoteError(null);
+
+    const registrationNo = quoteForm.registrationNo.trim().toUpperCase();
+    const mobile = quoteForm.mobile.trim();
+    const email = quoteForm.email.trim();
+
+    if (!registrationNo) {
+      setQuoteError("Enter registration number.");
+      return;
+    }
+    if (!/^\d{10}$/.test(mobile)) {
+      setQuoteError("Enter a valid 10-digit mobile number.");
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      setQuoteError("Enter a valid email address.");
+      return;
+    }
+    if (!quoteForm.agreeTerms) {
+      setQuoteError("Accept terms and conditions to continue.");
+      return;
+    }
+
+    const params = new URLSearchParams({
+      line: activeLine,
+      reg: registrationNo,
+      mobile,
+      email,
+    });
+    router.push(`/partner/quotes?${params.toString()}`);
+  };
+
   return (
     <div className="px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-6xl">
@@ -81,6 +158,111 @@ export default function PartnerHome() {
               Track policies, upload new documents, and manage your partner operations.
             </p>
           </div>
+        </section>
+
+        <section className="mt-6 overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-3 py-3 sm:px-4">
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+              {INSURANCE_LINES.map((line) => {
+                const Icon = line.icon;
+                const isActive = line.key === activeLine;
+                return (
+                  <button
+                    key={line.key}
+                    type="button"
+                    onClick={() => line.enabled && setActiveLine(line.key as InsuranceLine)}
+                    className={`rounded-xl border px-2 py-2 text-center transition ${
+                      isActive
+                        ? "border-[#0B5CAD] bg-blue-50 text-[#0B5CAD]"
+                        : line.enabled
+                          ? "border-slate-200 bg-white text-slate-700 hover:border-blue-200"
+                          : "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-400"
+                    }`}
+                  >
+                    <Icon className="mx-auto h-5 w-5" />
+                    <p className="mt-1 text-xs font-medium">{line.label}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <form onSubmit={onQuoteSubmit} className="bg-slate-50 px-4 py-5 sm:px-6">
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end">
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">{registrationLabel}</span>
+                <input
+                  type="text"
+                  value={quoteForm.registrationNo}
+                  onChange={(e) =>
+                    setQuoteForm((prev) => ({ ...prev, registrationNo: e.target.value.toUpperCase() }))
+                  }
+                  placeholder="E.g. MH01DF5698"
+                  className="mt-2 w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0B5CAD] focus:outline-none focus:ring-0"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">Mobile number</span>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={quoteForm.mobile}
+                  onChange={(e) =>
+                    setQuoteForm((prev) => ({ ...prev, mobile: e.target.value.replace(/\D/g, "").slice(0, 10) }))
+                  }
+                  placeholder="Enter mobile no."
+                  className="mt-2 w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0B5CAD] focus:outline-none focus:ring-0"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">Email</span>
+                <input
+                  type="email"
+                  value={quoteForm.email}
+                  onChange={(e) => setQuoteForm((prev) => ({ ...prev, email: e.target.value }))}
+                  placeholder="Enter email address"
+                  className="mt-2 w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0B5CAD] focus:outline-none focus:ring-0"
+                />
+              </label>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  type="submit"
+                  className="rounded-full bg-[#0B5CAD] px-7 py-3 text-sm font-semibold text-white transition hover:bg-[#0A4F95]"
+                >
+                  Get quote
+                </button>
+                <Link href="/partner/quotes" className="text-center text-sm font-medium text-[#0B5CAD] underline">
+                  Recent Quote
+                </Link>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:flex-wrap sm:items-center">
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={quoteForm.agreeTerms}
+                  onChange={(e) => setQuoteForm((prev) => ({ ...prev, agreeTerms: e.target.checked }))}
+                  className="h-4 w-4 rounded border-slate-300 text-[#0B5CAD] focus:ring-blue-500"
+                />
+                I agree to the terms & conditions
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={quoteForm.agreeWhatsApp}
+                  onChange={(e) => setQuoteForm((prev) => ({ ...prev, agreeWhatsApp: e.target.checked }))}
+                  className="h-4 w-4 rounded border-slate-300 text-[#0B5CAD] focus:ring-blue-500"
+                />
+                I want quote and policy details on WhatsApp
+              </label>
+            </div>
+
+            {quoteError && <p className="mt-3 text-sm font-medium text-rose-600">{quoteError}</p>}
+          </form>
         </section>
 
         <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
