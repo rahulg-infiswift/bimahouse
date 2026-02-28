@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, Car, Heart, ShieldPlus } from "lucide-react";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import {
+  FileText,
+  Handshake,
+  Headset,
+  Scale,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
+import GetQuoteCard from "./GetQuoteCard";
 
 export default function LoggedOutHome() {
   return (
@@ -34,17 +42,11 @@ export default function LoggedOutHome() {
               </div>
             </div>
 
-            <aside className="rounded-sm border border-slate-200 bg-slate-50 p-5 shadow-sm">
-              <h3 className="text-2xl font-semibold text-heading">Login</h3>
+            <aside className="flex min-h-[300px] flex-col rounded-sm border border-slate-200 bg-slate-50 p-5 shadow-sm">
+              <h3 className="text-2xl font-semibold text-heading">Welcome</h3>
               <p className="mt-1 text-sm text-slate-500">Access your portal</p>
 
-              <div className="mt-5 space-y-3">
-                <SignInButton mode="modal">
-                  <button className="w-full rounded-sm border border-[#0B5CAD] bg-[#0B5CAD] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0A4F95]">
-                    Customer Sign In
-                  </button>
-                </SignInButton>
-
+              <div className="mt-auto pt-6">
                 <Link
                   href="/partner/login"
                   className="block w-full rounded-sm border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-heading hover:border-[#A6C5F7] hover:bg-[#F5F9FF]"
@@ -52,65 +54,27 @@ export default function LoggedOutHome() {
                   Partner (POSP) Login
                 </Link>
 
-                <Link
-                  href="/employee/login"
-                  className="block w-full rounded-sm border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-heading hover:border-[#A6C5F7] hover:bg-[#F5F9FF]"
-                >
-                  Employee Login
-                </Link>
-              </div>
-
-              <p className="mt-4 text-xs text-slate-500">
-                New to Bima House?{" "}
-                <SignUpButton mode="modal">
-                  <button className="font-semibold text-[#0B5CAD] underline underline-offset-2 hover:text-[#0A4F95]">
-                    Create an account
+                <SignInButton mode="modal">
+                  <button className="mt-4 w-full rounded-sm border border-[#0B5CAD] bg-[#0B5CAD] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0A4F95]">
+                    Customer Sign In
                   </button>
-                </SignUpButton>
-                .
-              </p>
+                </SignInButton>
+
+                <p className="mt-4 text-xs text-slate-500">
+                  New to Bima House?{" "}
+                  <SignUpButton mode="modal">
+                    <button className="font-semibold text-[#0B5CAD] underline underline-offset-2 hover:text-[#0A4F95]">
+                      Create an account
+                    </button>
+                  </SignUpButton>
+                  .
+                </p>
+              </div>
             </aside>
           </div>
         </section>
 
-        <section className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="mb-5 flex items-end justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#0B5CAD]">Coverage Segments</p>
-              <h2 className="mt-1 text-2xl font-bold text-heading">Insurance Products We Support</h2>
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                label: "Life Insurance",
-                icon: <Heart className="h-4 w-4" />,
-              },
-              {
-                label: "Health Insurance",
-                icon: <ShieldPlus className="h-4 w-4" />,
-              },
-              {
-                label: "Motor Insurance",
-                icon: <Car className="h-4 w-4" />,
-              },
-              {
-                label: "Corporate Insurance",
-                icon: <Building2 className="h-4 w-4" />,
-              },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-sm border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-heading transition-all duration-200 hover:-translate-y-0.5 hover:border-[#9FC1F6] hover:bg-[#F5F9FF] hover:shadow-md hover:shadow-blue-100/60"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-[#0B5CAD]">{item.icon}</span>
-                  <span>{item.label}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        <GetQuoteCard quotesPath="/get-quote" />
 
         <section className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <h2 className="text-2xl font-bold text-heading">Why Customers Choose Bima House</h2>
@@ -119,33 +83,44 @@ export default function LoggedOutHome() {
               {
                 title: "IRDAI-Compliant Process",
                 desc: "Licensed advisory process with audit-ready workflows.",
+                icon: ShieldCheck,
               },
               {
                 title: "Insurer-Agnostic Guidance",
                 desc: "Compare options across providers with objective inputs.",
+                icon: Scale,
               },
               {
                 title: "Claims Assistance",
                 desc: "Structured support through claim lifecycle and escalation.",
+                icon: Headset,
               },
               {
                 title: "Partner Network",
                 desc: "Onboarded POSP partners operating through governed controls.",
+                icon: Handshake,
               },
               {
                 title: "Operational Reliability",
                 desc: "Predictable process with document and status visibility.",
+                icon: FileText,
               },
               {
                 title: "Customer-First Advisory",
                 desc: "Recommendations tailored to profile, risk, and budget.",
+                icon: UserRound,
               },
             ].map((item) => (
               <div
                 key={item.title}
                 className="rounded-sm border border-slate-200 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#9FC1F6] hover:bg-[#FAFCFF] hover:shadow-md hover:shadow-blue-100/50"
               >
-                <h3 className="text-sm font-bold uppercase tracking-wide text-[#0B5CAD]">{item.title}</h3>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-sm bg-[#EAF2FF] text-[#0B5CAD]">
+                    <item.icon className="h-4 w-4" />
+                  </span>
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-[#0B5CAD]">{item.title}</h3>
+                </div>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.desc}</p>
               </div>
             ))}
