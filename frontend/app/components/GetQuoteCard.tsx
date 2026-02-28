@@ -88,23 +88,29 @@ export default function GetQuoteCard({ quotesPath }: GetQuoteCardProps) {
             const Icon = line.icon;
             const isActive = line.key === activeLine;
             return (
-              <button
-                key={line.key}
-                type="button"
-                onClick={() =>
-                  line.enabled && setActiveLine(line.key as InsuranceLine)
-                }
-                className={`rounded-xl border px-2 py-2 text-center transition ${
-                  isActive
-                    ? "border-[#0B5CAD] bg-blue-50 text-[#0B5CAD]"
-                    : line.enabled
-                      ? "border-slate-200 bg-white text-slate-700 hover:border-blue-200"
-                      : "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-400"
-                }`}
-              >
-                <Icon className="mx-auto h-5 w-5" />
-                <p className="mt-1 text-xs font-medium">{line.label}</p>
-              </button>
+              <div key={line.key} className="group/tab relative">
+                <button
+                  type="button"
+                  onClick={() =>
+                    line.enabled && setActiveLine(line.key as InsuranceLine)
+                  }
+                  className={`w-full rounded-xl border px-2 py-2 text-center transition ${
+                    isActive
+                      ? "border-[#0B5CAD] bg-blue-50 text-[#0B5CAD]"
+                      : line.enabled
+                        ? "border-slate-200 bg-white text-slate-700 hover:border-blue-200"
+                        : "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-400"
+                  }`}
+                >
+                  <Icon className="mx-auto h-5 w-5" />
+                  <p className="mt-1 text-xs font-medium">{line.label}</p>
+                </button>
+                {!line.enabled && (
+                  <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-white opacity-0 shadow-lg transition-opacity before:absolute before:left-1/2 before:top-full before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-800 group-hover/tab:opacity-100">
+                    Coming Soon
+                  </span>
+                )}
+              </div>
             );
           })}
         </div>
