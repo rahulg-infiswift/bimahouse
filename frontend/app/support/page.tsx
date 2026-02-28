@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { AlertCircle, Headset, Mail, MessageSquareText, Send, ShieldCheck } from "lucide-react";
+import { AlertCircle, Headset, Mail, MessageSquareText, Paperclip, Send, ShieldCheck } from "lucide-react";
 import { SessionRole, canAccessPolicies } from "../lib/roles";
 import { usePartnerSession } from "../lib/use-partner-session";
 
@@ -31,6 +31,7 @@ export default function SupportPage() {
     subject: "",
     message: "",
   });
+  const [attachment, setAttachment] = useState<File | null>(null);
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
@@ -93,6 +94,7 @@ export default function SupportPage() {
       role ? `User Role: ${role}` : null,
       `Topic: ${form.topic}`,
       form.policyId ? `Policy ID: ${form.policyId}` : null,
+      attachment ? `Attachment: ${attachment.name} (please attach manually)` : null,
       "",
       form.message.trim(),
     ].filter(Boolean) as string[];
@@ -222,6 +224,45 @@ export default function SupportPage() {
               className="mt-2 w-full rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-[#0B5CAD] focus:outline-none focus:ring-2 focus:ring-blue-200"
             />
           </label>
+
+          <div className="mt-6">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <Paperclip className="h-3.5 w-3.5 text-[#0B5CAD]" />
+              Attach policy document (optional)
+            </span>
+            <div className="mt-2">
+              {attachment ? (
+                <div className="flex items-center gap-3 rounded-sm border border-slate-200 bg-slate-50 px-4 py-3">
+                  <Paperclip className="h-4 w-4 shrink-0 text-[#0B5CAD]" />
+                  <span className="min-w-0 truncate text-sm text-slate-700">{attachment.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setAttachment(null)}
+                    className="ml-auto shrink-0 text-xs font-medium text-slate-500 hover:text-rose-600"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-sm border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500 transition-colors hover:border-[#0B5CAD] hover:text-[#0B5CAD]">
+                  <Paperclip className="h-4 w-4" />
+                  Choose file
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      setAttachment(file);
+                    }}
+                  />
+                </label>
+              )}
+              <p className="mt-1.5 text-xs text-slate-400">
+                PDF, JPG, PNG, or DOC. The file name will be included in your email — please attach it manually when your email client opens.
+              </p>
+            </div>
+          </div>
 
           {error && (
             <div className="mt-4 flex items-start gap-2 rounded-sm border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
