@@ -20,14 +20,14 @@ export function PartnerDesktopNav() {
     <>
       <NavLink href="/" label="Home" icon={<Home className="h-4 w-4" />} />
       <NavLink
-        href="/policies"
-        label="My Policies"
-        icon={<FileText className="h-4 w-4" />}
-      />
-      <NavLink
         href="/upload"
         label="Upload Policy"
         icon={<Upload className="h-4 w-4" />}
+      />
+      <NavLink
+        href="/policies"
+        label="My Policies"
+        icon={<FileText className="h-4 w-4" />}
       />
       <NavLink
         href="/advisor"
@@ -55,12 +55,12 @@ export function PartnerMobileNav() {
     <nav className="flex items-center gap-1 xl:hidden">
       <MobileNavLink href="/" icon={<Home className="h-5 w-5 shrink-0" />} />
       <MobileNavLink
-        href="/policies"
-        icon={<FileText className="h-5 w-5 shrink-0" />}
-      />
-      <MobileNavLink
         href="/upload"
         icon={<Upload className="h-5 w-5 shrink-0" />}
+      />
+      <MobileNavLink
+        href="/policies"
+        icon={<FileText className="h-5 w-5 shrink-0" />}
       />
       <MobileNavLink
         href="/advisor"
