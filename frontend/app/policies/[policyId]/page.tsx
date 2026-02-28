@@ -217,7 +217,7 @@ export default function PolicyDetailsPage() {
                 className="inline-flex items-center gap-2 rounded-sm bg-[#0B5CAD] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-[#0A4F95] disabled:opacity-50 transition-colors"
               >
                 <Download className="h-4 w-4" />
-                Excel
+                Download Excel
               </button>
             </div>
             {policy ? (

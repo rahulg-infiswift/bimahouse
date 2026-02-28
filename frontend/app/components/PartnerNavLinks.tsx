@@ -5,7 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { usePartnerSession } from "../lib/use-partner-session";
 import { clearPartnerToken } from "../lib/partner-auth";
 import { useRouter } from "next/navigation";
-import { Bot, Calculator, FileText, Headset, Home, LogOut, Upload } from "lucide-react";
+import { Bot, FileText, Headset, Home, LogOut, Upload } from "lucide-react";
 import { NavLink, MobileNavLink } from "./NavLink";
 
 // Desktop nav links for partner session (OTP login)
@@ -28,11 +28,6 @@ export function PartnerDesktopNav() {
         href="/upload"
         label="Upload Policy"
         icon={<Upload className="h-4 w-4" />}
-      />
-      <NavLink
-        href="/partner/quotes"
-        label="Get Quotes"
-        icon={<Calculator className="h-4 w-4" />}
       />
       <NavLink
         href="/advisor"
@@ -66,10 +61,6 @@ export function PartnerMobileNav() {
       <MobileNavLink
         href="/upload"
         icon={<Upload className="h-5 w-5 shrink-0" />}
-      />
-      <MobileNavLink
-        href="/partner/quotes"
-        icon={<Calculator className="h-5 w-5 shrink-0" />}
       />
       <MobileNavLink
         href="/advisor"
