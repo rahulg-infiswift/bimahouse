@@ -3,46 +3,47 @@ from __future__ import annotations
 import time
 from typing import Any
 
-import requests
-
 from app.core.config import settings
 from app.providers.base import QuoteProvider
 
-FALLBACK_QUOTE = {
-    "BaseOdPremium": 13290,
-    "BaseTPPremium": 3400,
-    "NcbAmount": 5980,
-    "NcbPercentage": 45,
-    "OdPremium": 6610,
-    "PaCoverAmount": 0,
-    "PaidDriverLegalLiability": 0,
-    "GST": 1802,
-    "Premium": 10010,
-    "FinalPremium": 11812,
-    "AddonPrice": None,
-    "PackagePrice": None,
-    "TransactionId": "tata_agi_sim_fallback",
-    "RequestId": None,
-    "IDV": 508220,
-    "MinIDV": 454000,
-    "MaxIDV": 602000,
-    "PolicyStartDate": "2024-10-02T00:00:00",
-    "PolicyEndtDate": "2025-10-01T23:59:59",
-    "IsInspectionRequire": False,
-    "CachedId": "E",
-    "Success": True,
-    "ErrorMessage": "",
-    "ErrorCode": None,
-}
-
-
-class TataAgiMotor2WProvider(QuoteProvider):
-    insurer_code = "tata_agi"
+class IciciMotor2WProvider(QuoteProvider):
+    insurer_code = "icici"
 
     def get_quote(self, canonical_request: dict[str, Any], *, is_live: bool) -> dict[str, Any]:
         payload = self._to_provider_request(canonical_request)
-        raw = self._post_or_fallback(settings.tata_agi_get_quote_url, payload, is_live=is_live)
+        fallback = self._compute_fallback(canonical_request)
+        raw = self._post_or_fallback(settings.icici_get_quote_url, payload, fallback, is_live=is_live)
         return self._normalize(raw)
+
+    def _compute_fallback(self, canonical_request: dict[str, Any]) -> dict[str, Any]:
+        coverage = canonical_request.get("coverage") or {}
+        policy_history = canonical_request.get("policy_history") or {}
+
+        idv = float(coverage.get("idv") or 208966)
+        base_od = round(idv * 0.0263)  # ICICI 2W OD rate
+        tp = 3416
+        ncb_pct = int(policy_history.get("previous_policy_ncb_percentage") or 0)
+        ncb = round(base_od * ncb_pct / 100)
+        od_after_ncb = base_od - ncb
+        premium = od_after_ncb + tp
+        gst = round(premium * 0.18)
+        final = premium + gst
+
+        return {
+            "BaseOdPremium": base_od,
+            "BaseTPPremium": tp,
+            "NcbAmount": ncb,
+            "NcbPercentage": ncb_pct,
+            "OdPremium": od_after_ncb,
+            "GST": gst,
+            "Premium": premium,
+            "FinalPremium": final,
+            "IDV": idv,
+            "MinIDV": round(idv * 0.9),
+            "MaxIDV": round(idv * 1.1),
+            "Success": True,
+            "ErrorMessage": "",
+        }
 
     def _to_provider_request(self, canonical_request: dict[str, Any]) -> dict[str, Any]:
         vehicle = canonical_request.get("vehicle") or {}
@@ -102,14 +103,3 @@ class TataAgiMotor2WProvider(QuoteProvider):
             "provider_response": raw,
         }
 
-    def _post_or_fallback(self, url: str | None, payload: dict[str, Any], *, is_live: bool) -> dict[str, Any]:
-        if not is_live or not url:
-            return dict(FALLBACK_QUOTE)
-        try:
-            resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=20)
-            body = resp.json() if resp.content else {}
-            if resp.ok and body:
-                return body
-        except Exception:
-            pass
-        return dict(FALLBACK_QUOTE)

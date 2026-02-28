@@ -3,8 +3,9 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from app.providers.registry import get_motor_2w_providers
-from app.quotes.schemas import QuoteItemOut, QuoteRequestIn, QuoteResultOut
+from app.providers.registry import get_motor_4w_providers
+from app.quotes.common_schemas import QuoteItemOut, QuoteResultOut
+from app.quotes.motor_4w_schemas import Motor4WQuoteRequestIn
 
 DISCLAIMER = (
     "Comparison is indicative for advisory use only. "
@@ -12,11 +13,10 @@ DISCLAIMER = (
 )
 
 
-def _build_canonical_request(req: QuoteRequestIn, *, is_live: bool) -> dict[str, Any]:
-    """Convert the typed schema into the provider-agnostic canonical dict."""
+def _build_canonical_request(req: Motor4WQuoteRequestIn, *, is_live: bool) -> dict[str, Any]:
     return {
         "request_id": str(uuid.uuid4()),
-        "vehicle_category": "2w",
+        "vehicle_category": "4w",
         "is_live": is_live,
         "proposer": {
             "pincode": req.proposer.pincode,
@@ -39,10 +39,6 @@ def _build_canonical_request(req: QuoteRequestIn, *, is_live: bool) -> dict[str,
             "previous_policy_has_zd_cover": req.policy_history.previous_policy_has_zd_cover,
             "previous_insurer_code": req.policy_history.previous_insurer_code,
             "previous_policy_number": req.policy_history.previous_policy_number,
-            "active_tp_start_date": req.policy_history.active_tp_start_date,
-            "active_tp_end_date": req.policy_history.active_tp_end_date,
-            "active_tp_insurer_code": req.policy_history.active_tp_insurer_code,
-            "active_tp_policy_number": req.policy_history.active_tp_policy_number,
         },
         "coverage": {
             "idv_type": req.coverage.idv_type,
@@ -53,25 +49,18 @@ def _build_canonical_request(req: QuoteRequestIn, *, is_live: bool) -> dict[str,
             "number_of_employee": req.coverage.number_of_employee,
             "electrical_accessories_si": req.coverage.electrical_accessories_si,
             "non_electrical_accessories_si": req.coverage.non_electrical_accessories_si,
-            "unnamed_pa_cover": req.coverage.unnamed_pa_cover,
-            "named_pa_cover": req.coverage.named_pa_cover,
             "has_anti_theft_device": req.coverage.has_anti_theft_device,
-            "automobile_association_membership_number": req.coverage.automobile_association_membership_number,
-            "driving_accessories_si": req.coverage.driving_accessories_si,
-            "key_protect_si": req.coverage.key_protect_si,
         },
     }
 
 
-def fetch_quotes(request: QuoteRequestIn, *, is_live: bool) -> QuoteResultOut:
-    """Fetch quotes from all configured providers and return a sorted comparison."""
+def fetch_motor_4w_quotes(request: Motor4WQuoteRequestIn, *, is_live: bool) -> QuoteResultOut:
     canonical = _build_canonical_request(request, is_live=is_live)
 
     raw_quotes: list[dict[str, Any]] = []
-    for provider in get_motor_2w_providers():
+    for provider in get_motor_4w_providers():
         raw_quotes.append(provider.get_quote(canonical, is_live=is_live))
 
-    # Sort: successful quotes first, then by final_premium ascending
     sorted_quotes = sorted(
         raw_quotes,
         key=lambda q: (
@@ -98,8 +87,4 @@ def fetch_quotes(request: QuoteRequestIn, *, is_live: bool) -> QuoteResultOut:
         for q in sorted_quotes
     ]
 
-    return QuoteResultOut(
-        quotes=items,
-        best_value_insurer=best,
-        disclaimer=DISCLAIMER,
-    )
+    return QuoteResultOut(quotes=items, best_value_insurer=best, disclaimer=DISCLAIMER)

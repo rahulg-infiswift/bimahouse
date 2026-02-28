@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     twilio_auth_token: Optional[str] = None
     twilio_from_number: Optional[str] = None
 
-    # Advisor integration
+    # Insurer API URLs — Motor 2W
     icici_get_quote_url: Optional[str] = None
     icici_save_quote_url: Optional[str] = None
     icici_proposal_url: Optional[str] = None
@@ -61,6 +61,26 @@ class Settings(BaseSettings):
     tata_agi_get_quote_url: Optional[str] = None
     tata_agi_save_quote_url: Optional[str] = None
     tata_agi_proposal_url: Optional[str] = None
+
+    # Insurer API URLs — Motor 4W
+    icici_motor_4w_get_quote_url: Optional[str] = None
+    tata_agi_motor_4w_get_quote_url: Optional[str] = None
+    hdfc_ergo_motor_4w_get_quote_url: Optional[str] = None
+
+    # Insurer API URLs — Health
+    star_health_get_quote_url: Optional[str] = None
+    hdfc_ergo_health_get_quote_url: Optional[str] = None
+    care_health_get_quote_url: Optional[str] = None
+
+    # Insurer API URLs — Travel
+    icici_travel_get_quote_url: Optional[str] = None
+    tata_agi_travel_get_quote_url: Optional[str] = None
+    bajaj_allianz_travel_get_quote_url: Optional[str] = None
+
+    # Insurer API URLs — Home
+    icici_home_get_quote_url: Optional[str] = None
+    hdfc_ergo_home_get_quote_url: Optional[str] = None
+    bajaj_allianz_home_get_quote_url: Optional[str] = None
 
 
 settings = Settings()
